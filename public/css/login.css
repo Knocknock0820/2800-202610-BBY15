@@ -1,0 +1,58 @@
+/* public/css/login.css */
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #19350c;
+}
+
+.login-title {
+  color: #d5d3cc;
+}
+
+.custom-subtitle {
+  color: #d5d3cc !important;
+}
+
+.login-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.form-control {
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.btn-login {
+  background-color: #687d31;
+  color: white;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-login:hover {
+  background-color: #2a5a15;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.signup-link {
+  color: #d5d3cc;
+  text-decoration: none;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}
+
+.back-link {
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}

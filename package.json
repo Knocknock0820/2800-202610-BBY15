@@ -1,0 +1,37 @@
+{
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-mongo": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "ejs": "^5.0.2",
+    "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-session": "^1.19.0",
+    "install": "^0.13.0",
+    "joi": "^18.2.1",
+    "mongodb": "^7.2.0"
+  },
+  "name": "2800-202610-bby15",
+  "version": "1.0.0",
+  "description": "Team Name: BBY-15\r Team Members:",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Knocknock0820/2800-202610-BBY15.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Knocknock0820/2800-202610-BBY15/issues"
+  },
+  "homepage": "https://github.com/Knocknock0820/2800-202610-BBY15#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

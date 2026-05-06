@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Our Plant App</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/css/landing.css" />
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="#">App Name</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="landing">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="about">About</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <section
+      class="hero-section d-flex align-items-center text-center text-white"
+    >
+      <!-- Hero Section -->
+      <div class="container">
+        <h1 class="display-3 fw-bold mb-4" style="color: #d5d3cc">
+          Keep Your Plants Alive
+        </h1>
+        <p class="lead mb-5">
+          Never forget to water your plants again! Our app helps you track
+          watering schedules, set reminders, and provides care tips for all your
+          green friends.
+        </p>
+
+        <!-- Call to Action Buttons -->
+        <div class="d-flex justify-content-center gap-3">
+          <a
+            href="/login"
+            class="btn btn-light btn-lg px-5 fw-bold"
+            style="background-color: #d5d3cc"
+            >Login</a
+          >
+          <a href="/signup" class="btn btn-outline-light btn-lg px-5 fw-bold"
+            >Sign Up</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
