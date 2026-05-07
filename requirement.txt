@@ -1,0 +1,6 @@
+npm install dotenv
+npm install express
+npm install express-session
+npm install connect-mongo
+npm install bcrypt
+npm install joi
