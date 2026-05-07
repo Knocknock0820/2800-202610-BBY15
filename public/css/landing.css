@@ -1,10 +1,18 @@
 /* public/css/landing.css */
 
-.body {
-  font-family: "Inter", sans-serif;
+body {
+  font-family: "DM Sans", sans-serif;
 }
 .custom-navbar {
   background-color: #19350c;
+}
+
+.custom-navbar .navbar-brand {
+  font-family: "Playfair Display", serif;
+}
+
+.hero-section h1 {
+  font-family: "Playfair Display", serif;
 }
 
 .hero-section {

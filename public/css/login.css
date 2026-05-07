@@ -1,11 +1,12 @@
 /* public/css/login.css */
 
 body {
-  font-family: "Inter", sans-serif;
+  font-family: "DM Sans", sans-serif;
   background-color: #19350c;
 }
 
 .login-title {
+  font-family: "Playfair Display", serif;
   color: #d5d3cc;
 }
 

@@ -1,3 +1,7 @@
+// Setting up server, routes, and connecting to MongoDB all hand written. 
+// Unless mentioned otherwise in the comments.
+// Modified by: Harun Yaprak
+
 require("dotenv").config();
 
 const express = require("express");
@@ -5,6 +9,8 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+
+const weatherApiRouter = require("./routes/weatherApi");
 
 const app = express();
 const port = 3000;
@@ -25,10 +31,44 @@ const userCollection = database
   .db(mongodb_user_database)
   .collection("user-info");
 
+const plantCollection = database
+  .db(mongodb_user_database)
+  .collection("plant-types");
+
+/* Seed example plants types to database on startup (if database is empty)
+  This function will be changed in the future,
+   after we figured out how to implement the database  */
+
+   // This code is handwritten, but got help from AI.
+   //Modified by: Harun Yaprak
+async function seedPlants() {
+  try {
+    const count = await plantCollection.countDocuments();
+    if (count === 0) {
+      const defaultPlants = [
+        { name: "Monstera", waterFreq: "Every week" },
+        { name: "Snake Plant", waterFreq: "Once a month" },
+        { name: "Cactus", waterFreq: "Every 2 weeks" },
+        { name: "Peace Lily", waterFreq: "Every 3 days" },
+        { name: "Spider Plant", waterFreq: "Every week" },
+        { name: "Pothos", waterFreq: "Every 1-2 weeks" },
+        { name: "Aloe Vera", waterFreq: "Every 2-3 weeks" }
+      ];
+      await plantCollection.insertMany(defaultPlants);
+      console.log("Seeded default plant types into database.");
+    }
+  } catch (err) {
+    console.error("Error seeding plants:", err);
+  }
+}
+seedPlants();
+
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+app.use("/api/weather", weatherApiRouter);
 
 var mongoStore = MongoStore.create({
   mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/${mongodb_session_database}`,
@@ -58,21 +98,37 @@ app.get("/", requiredLogin, (req, res) => {
   res.render("mainpage.ejs", { name: req.session.username });
 });
 
+// API endpoint to fetch plant types
+//Modified by: Harun Yaprak
+app.get("/api/plants", requiredLogin, async (req, res) => {
+  try {
+    const plants = await plantCollection.find({}).project({_id: 1, name: 1, waterFreq: 1}).toArray();
+    res.json(plants);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch plants" });
+  }
+});
+
+// Render the about page
+//Modified by: Harun Yaprak
 app.get("/about", (req, res) => {
   res.render("about.ejs");
 });
 
 // Render the landing page
+//Modified by: Harun Yaprak
 app.get("/landing", (req, res) => {
   res.render("landing.ejs");
 });
 
 // Render the login page
+//Modified by: Harun Yaprak
 app.get("/login", (req, res) => {
   res.render("login.ejs", { error: null });
 });
 
 // Handle login form submission
+//Modified by: Harun Yaprak
 app.post("/login", async (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -105,10 +161,13 @@ app.post("/login", async (req, res) => {
 });
 
 // Render the signup page
+//Modified by: Harun Yaprak
 app.get("/signup", (req, res) => {
   res.render("signup.ejs");
 });
 
+// Handle signup form submission
+//Modified by: Harun Yaprak
 app.post("/signup", async (req, res) => {
   const username = req.body.username;
   const email = req.body.email;
@@ -135,6 +194,22 @@ app.post("/signup", async (req, res) => {
   res.redirect("/");
 });
 
+// Render the profile page
+app.get("/profile", requiredLogin, (req, res) => {
+  res.render("profile.ejs", { name: req.session.username });
+});
+
+//   Render the community page
+app.get("/community", requiredLogin, (req, res) => {
+  res.render("community.ejs", { name: req.session.username });
+});
+
+// Render the details page
+app.get("/details", requiredLogin, (req, res) => {
+  res.render("details.ejs", { name: req.session.username });
+});
+
+// Handle logout
 app.post("/logout", (req, res) => {
   req.session.destroy();
   res.redirect("/landing");
@@ -146,6 +221,7 @@ app.use((req, res) => {
   res.render("404");
 });
 
+// Start the server
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);
 });
