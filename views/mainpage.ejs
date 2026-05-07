@@ -67,11 +67,13 @@
     </main>
 
     <!-- ===== FLOATING ADD BUTTON (FAB) ===== -->
-    <button class="btn-fab" id="btnAdd" title="Add plant">
+    <button class="btn btn-primary rounded-circle shadow" id="btnAdd" title="Add plant" 
+            data-bs-toggle="modal" data-bs-target="#addPlantModal"
+            style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; z-index: 1000; background-color: #687d31; border: none; display: flex; align-items: center; justify-content: center;">
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="22"
-        height="22"
+        width="24"
+        height="24"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -84,27 +86,32 @@
       </svg>
     </button>
 
-    <!-- ===== ADD PLANT MODAL (bottom sheet) ===== -->
-    <div class="modal-overlay" id="addPlantModal">
-      <div class="modal-sheet">
-        <h3>Add a New Plant</h3>
-
-        <label for="plantSpecies">Plant Species</label>
-        <select id="plantSpecies">
-          <option value="" disabled selected>Loading species...</option>
-        </select>
-
-        <label for="plantName">Nickname (Optional)</label>
-        <input
-          type="text"
-          id="plantName"
-          placeholder="e.g. My Favorite Fern"
-          maxlength="40"
-        />
-
-        <div class="modal-actions">
-          <button class="btn-cancel" id="btnCancel">Cancel</button>
-          <button class="btn-save" id="btnSave">Save Plant</button>
+    <!-- code adopted from boostrap : https://getbootstrap.com/docs/5.3/components/modal/
+    Modified by: Harun Yaprak -->
+    <!-- ===== ADD PLANT MODAL (Bootstrap native) ===== -->
+    <div class="modal fade" id="addPlantModal" tabindex="-1" aria-labelledby="addPlantModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #f2f1ee; border-radius: 24px;">
+          <div class="modal-header border-0 pb-0 mt-2">
+            <h5 class="modal-title fw-bold mx-auto" id="addPlantModalLabel" style="color: #19350c; font-family: 'Playfair Display', serif; font-size: 1.3rem;">Add a New Plant</h5>
+            <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body px-4 pt-4">
+            <div class="mb-3">
+              <label for="plantSpecies" class="form-label fw-bold small mb-1" style="color: #687d31; text-transform: uppercase; letter-spacing: 0.05em;">Plant Species</label>
+              <select class="form-select" id="plantSpecies" style="border-radius: 12px; padding: 12px 14px; border: 1.5px solid #d5d3cc; box-shadow: none;">
+                <option value="" disabled selected>Loading species...</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="plantName" class="form-label fw-bold small mb-1" style="color: #687d31; text-transform: uppercase; letter-spacing: 0.05em;">Nickname (Optional)</label>
+              <input type="text" class="form-control" id="plantName" placeholder="e.g. My Favorite Fern" maxlength="40" style="border-radius: 12px; padding: 12px 14px; border: 1.5px solid #d5d3cc; box-shadow: none;" />
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0 px-4 pb-4 d-flex gap-2">
+            <button type="button" class="btn flex-fill" data-bs-dismiss="modal" style="border: 1.5px solid #d5d3cc; border-radius: 12px; color: #687d31; font-weight: 600; padding: 12px;">Cancel</button>
+            <button type="button" class="btn flex-fill" id="btnSave" style="background-color: #687d31; color: #d5d3cc; border-radius: 12px; font-weight: 600; padding: 12px; border: none;">Save Plant</button>
+          </div>
         </div>
       </div>
     </div>

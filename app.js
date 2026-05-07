@@ -15,7 +15,7 @@ const weatherApiRouter = require("./routes/weatherApi");
 const app = express();
 const port = 3000;
 const saltRounds = 12;
-const expireTime = 24 * 60 * 60 * 1000;
+const expireTime = 60 * 60 * 1000;
 
 const mongodb_host = process.env.MONGODB_HOST;
 const mongodb_user = process.env.MONGODB_USER;

@@ -89,13 +89,11 @@ function savePlants(plants) {
    Build a card DOM element for a single plant object
    and attach the expand/collapse toggle to it.
 ------------------------------------------------------- */
-// Code partly adapted from Ai.
+// Code adopted from bootstrap : https://getbootstrap.com/docs/5.3/components/card/
 // Modified by: Harun Yaprak
 // Create and return a .plant-card element for the given plant
 function createPlantCard(plant) {
-  const card = document.createElement("div");
-  card.className = "plant-card";
-  card.dataset.id = plant.id;
+  const wrapper = document.createElement("div");
 
   const displayName = plant.nickname ? `${plant.nickname} (${plant.species})` : (plant.species || plant.name);
   const addedDate = plant.addedAt ? new Date(plant.addedAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "Unknown date";
@@ -110,41 +108,64 @@ function createPlantCard(plant) {
     }
   }
 
-  card.innerHTML = `
-    <div class="plant-card-header">${displayName}</div>
-    <div class="plant-card-body">
-      <p class="added-date-text">Added on ${addedDate}</p>
-      <div class="watering-checklist">
-        <label class="checklist-item">
-          <input type="checkbox" class="water-checkbox" ${isWatered ? "checked" : ""} />
-          <span>Watering Schedule: ${plant.waterFreq}</span>
-        </label>
+  wrapper.innerHTML = `
+    <!-- Bootstrap Card -->
+    <div class="card mb-3 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; background-color: #d5d3cc;">
+      <!-- Card Header (Clickable for Bootstrap Collapse) -->
+      <div class="card-header fw-bold d-flex justify-content-between align-items-center" 
+           data-bs-toggle="collapse" 
+           href="#collapsePlant${plant.id}" 
+           role="button" aria-expanded="false" 
+           style="cursor: pointer; padding: 16px 24px; color: #19350c; background-color: transparent; border-bottom: none;">
+        <span>${displayName}</span>
+        <small class="text-muted" style="font-size: 0.7em;">▼</small>
       </div>
-      <div class="card-footer-row">
-        <a href="/details" class="btn-details">Details</a>
-        <button class="btn-delete" data-id="${plant.id}" title="Remove plant">
-          <img src="/icons/bin.png" alt="Delete" class="delete-icon" />
-        </button>
+      
+      <!-- Collapsible Body -->
+      <div class="collapse" id="collapsePlant${plant.id}">
+        <div class="card-body" style="background-color: #e8e6e0; padding: 16px 24px;">
+          <p class="small mb-3" style="color: #687d31; font-weight: 500; font-style: italic;">Added on ${addedDate}</p>
+          
+          <!-- Watering Checklist -->
+          <div class="form-check mb-3 p-3" style="background-color: #f2f1ee; border-radius: 12px; margin-left: 0; padding-left: 12px;">
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-check-input water-checkbox m-0" type="checkbox" id="check${plant.id}" ${isWatered ? "checked" : ""} style="width: 18px; height: 18px; accent-color: #687d31;">
+              <label class="form-check-label" for="check${plant.id}" style="color: #19350c; font-size: 0.9rem;">
+                Watering Schedule: ${plant.waterFreq}
+              </label>
+            </div>
+          </div>
+          
+          <!-- Footer Buttons -->
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
+            <a href="/details" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
+            <button class="btn btn-sm btn-delete border-0" data-id="${plant.id}" title="Remove plant" style="background: transparent; border: 1.5px solid rgba(25,53,12,0.2) !important; border-radius: 20px; padding: 4px 10px;">
+              <img src="/icons/bin.png" alt="Delete" style="width: 16px; height: 16px; opacity: 0.6;" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
+  const card = wrapper.firstElementChild;
+
   // Attach listener to checkbox to save watering state
   const checkbox = card.querySelector(".water-checkbox");
-  checkbox.addEventListener("change", (e) => {
-    updatePlantWateredState(plant.id, e.target.checked);
-  });
-
-  // Attach expand/collapse click listener to the header
-  card.querySelector(".plant-card-header").addEventListener("click", () => {
-    toggleCard(card);
-  });
+  if (checkbox) {
+    checkbox.addEventListener("change", (e) => {
+      updatePlantWateredState(plant.id, e.target.checked);
+    });
+  }
 
   // Attach delete listener — stops propagation so it doesn't trigger the toggle
-  card.querySelector(".btn-delete").addEventListener("click", (e) => {
-    e.stopPropagation();
-    deletePlant(plant.id);
-  });
+  const deleteBtn = card.querySelector(".btn-delete");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deletePlant(plant.id);
+    });
+  }
 
   return card;
 }
@@ -179,23 +200,7 @@ function getIntervalDays(freqStr) {
   return 7; // default to 1 week
 }
 
-// Expand the clicked card and collapse all others
-function toggleCard(card) {
-  const body = card.querySelector(".plant-card-body");
-  const isOpen = body.classList.contains("open");
 
-  // Close every currently open card first
-  document.querySelectorAll(".plant-card-body.open").forEach((b) => {
-    b.classList.remove("open");
-    b.closest(".plant-card").classList.remove("expanded");
-  });
-
-  // If this card was closed before the click, open it now
-  if (!isOpen) {
-    body.classList.add("open");
-    card.classList.add("expanded");
-  }
-}
 
 // Render all plants from storage into #plantList
 function renderPlants() {
@@ -254,18 +259,6 @@ async function fetchPlantTypes() {
 }
 
 
-function openModal() {
-  const modal = document.getElementById("addPlantModal");
-  // Clear any previous input before showing the modal
-  document.getElementById("plantName").value = "";
-  document.getElementById("plantSpecies").value = "";
-  modal.classList.add("open");
-}
-
-function closeModal() {
-  document.getElementById("addPlantModal").classList.remove("open");
-}
-
 // Create a new plant object and persist it, then refresh the list
 function savePlant() {
   const speciesSelect = document.getElementById("plantSpecies");
@@ -293,26 +286,28 @@ function savePlant() {
   plants.push(newPlant);
   savePlants(plants);
 
-  closeModal();
+  // Close the bootstrap modal
+  const modalEl = document.getElementById("addPlantModal");
+  const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.hide();
+
   renderPlants(); // refresh the list to show the new card
 }
 
 function initModal() {
   fetchPlantTypes();
 
-  // FAB opens the modal
-  document.getElementById("btnAdd").addEventListener("click", openModal);
-
-  // Cancel button closes the modal
-  document.getElementById("btnCancel").addEventListener("click", closeModal);
+  // Clear modal inputs when it's about to be shown
+  const modalEl = document.getElementById("addPlantModal");
+  if (modalEl) {
+    modalEl.addEventListener("show.bs.modal", () => {
+      document.getElementById("plantName").value = "";
+      document.getElementById("plantSpecies").value = "";
+    });
+  }
 
   // Save button persists the plant
   document.getElementById("btnSave").addEventListener("click", savePlant);
-
-  // Tapping the dark backdrop (outside the sheet) also closes the modal
-  document.getElementById("addPlantModal").addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) closeModal();
-  });
 }
 
 /* -------------------------------------------------------
