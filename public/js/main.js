@@ -26,9 +26,10 @@ async function loadWeather() {
     navigator.geolocation.getCurrentPosition(
       async ({ coords: { latitude, longitude } }) => {
         try {
-          const res = await fetch(`/api/weather/coords?lat=${latitude}&lon=${longitude}`);
-          if (!res.ok) 
-            throw new Error("Weather error");
+          const res = await fetch(
+            `/api/weather/coords?lat=${latitude}&lon=${longitude}`,
+          );
+          if (!res.ok) throw new Error("Weather error");
           const data = await res.json();
           showWeather(data.temp, data.city);
         } catch {
@@ -38,7 +39,7 @@ async function loadWeather() {
       // Geolocation denied → fall through to IP-based fallback
       async () => {
         await loadWeatherByIP();
-      }
+      },
     );
   } else {
     // Browser has no geolocation at all → use IP fallback
@@ -52,9 +53,8 @@ async function loadWeather() {
 async function loadWeatherByIP() {
   const el = document.getElementById("weatherText");
   try {
-    const res = await fetch('/api/weather/ip');
-    if (!res.ok) 
-      throw new Error("Weather error");
+    const res = await fetch("/api/weather/ip");
+    if (!res.ok) throw new Error("Weather error");
     const data = await res.json();
     showWeather(data.temp, data.city);
   } catch {
@@ -95,9 +95,17 @@ function savePlants(plants) {
 function createPlantCard(plant) {
   const wrapper = document.createElement("div");
 
-  const displayName = plant.nickname ? `${plant.nickname} (${plant.species})` : (plant.species || plant.name);
-  const addedDate = plant.addedAt ? new Date(plant.addedAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "Unknown date";
-  
+  const displayName = plant.nickname
+    ? `${plant.nickname} (${plant.species})`
+    : plant.species || plant.name;
+  const addedDate = plant.addedAt
+    ? new Date(plant.addedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "Unknown date";
+
   const now = Date.now();
   let isWatered = false;
   if (plant.lastWateredAt) {
@@ -138,7 +146,7 @@ function createPlantCard(plant) {
           
           <!-- Footer Buttons -->
           <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
-            <a href="/details" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
+            <a href="/details/${plant.species}" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
             <button class="btn btn-sm btn-delete border-0" data-id="${plant.id}" title="Remove plant" style="background: transparent; border: 1.5px solid rgba(25,53,12,0.2) !important; border-radius: 20px; padding: 4px 10px;">
               <img src="/icons/bin.png" alt="Delete" style="width: 16px; height: 16px; opacity: 0.6;" />
             </button>
@@ -180,7 +188,7 @@ function deletePlant(id) {
 // Update the watering state of a plant
 function updatePlantWateredState(id, isWatered) {
   const plants = loadPlants();
-  const index = plants.findIndex(p => p.id === id);
+  const index = plants.findIndex((p) => p.id === id);
   if (index !== -1) {
     plants[index].lastWateredAt = isWatered ? new Date().toISOString() : null;
     savePlants(plants);
@@ -199,8 +207,6 @@ function getIntervalDays(freqStr) {
   if (str.includes("month")) return 30;
   return 7; // default to 1 week
 }
-
-
 
 // Render all plants from storage into #plantList
 function renderPlants() {
@@ -236,14 +242,14 @@ let availablePlantTypes = [];
 async function fetchPlantTypes() {
   try {
     const res = await fetch("/api/plants");
-    if (!res.ok) 
-      throw new Error("Failed to fetch plants");
+    if (!res.ok) throw new Error("Failed to fetch plants");
     availablePlantTypes = await res.json();
-    
+
     const select = document.getElementById("plantSpecies");
-    select.innerHTML = '<option value="" disabled selected>Select a species...</option>';
-    
-    availablePlantTypes.forEach(p => {
+    select.innerHTML =
+      '<option value="" disabled selected>Select a species...</option>';
+
+    availablePlantTypes.forEach((p) => {
       const option = document.createElement("option");
       option.value = p._id;
       option.textContent = p.name;
@@ -253,11 +259,11 @@ async function fetchPlantTypes() {
     console.error(err);
     const select = document.getElementById("plantSpecies");
     if (select) {
-      select.innerHTML = '<option value="" disabled>Error loading species</option>';
+      select.innerHTML =
+        '<option value="" disabled>Error loading species</option>';
     }
   }
 }
-
 
 // Create a new plant object and persist it, then refresh the list
 function savePlant() {
@@ -270,7 +276,7 @@ function savePlant() {
     return; // do nothing if species is not selected
   }
 
-  const selectedType = availablePlantTypes.find(p => p._id === speciesId);
+  const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
   const plants = loadPlants();
 
   const newPlant = {
@@ -288,7 +294,8 @@ function savePlant() {
 
   // Close the bootstrap modal
   const modalEl = document.getElementById("addPlantModal");
-  const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  const modal =
+    bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
   modal.hide();
 
   renderPlants(); // refresh the list to show the new card
