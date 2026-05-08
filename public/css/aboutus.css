@@ -1,0 +1,148 @@
+/* ================================================
+   public/css/aboutus.css  –  About us page
+   Project palette:
+     dark green  : #19350c
+     mid green   : #687d31
+     off-white   : #d5d3cc
+     background  : #f2f1ee
+   ================================================ */
+/* css for about us page hehe */
+
+/* ── Base ── */
+body{
+    font-family: "DM Sans", sans-serif;
+    background-color: #f2f1ee;
+    color: #19350c;
+}
+
+/* header */
+
+.about-header{
+    background: linear-gradient(135deg, rgb(32, 68, 15) 0%, #687d31 100%);
+    text-align: center;
+    color: #d5d3cc ;
+}
+
+.about-header h1{
+    font-family: "Playfair Display", serif;
+
+}
+
+/* ── navbar matches all the other pages  ── */
+
+.custom-navbar {
+  background-color: #19350c;
+}
+.custom-navbar .navbar-brand {
+  font-family: "Playfair Display", serif;
+  margin-bottom: 0.5rem;
+
+}
+
+/* ── Section titles ── */
+.section-title {
+    font-family: "Playfair Display", serif;
+    color: #19350c;
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.section-divider {
+    width: 48px;
+    height: 3px;
+    background-color: #687d31 ;
+    border: none;
+    margin: 0 0 2rem 0;
+
+}
+
+/* ── Our Mission strip ── */
+.misson-strip{
+    background-color: #406768;
+    padding: 40px 24px;
+    color: #d5d3cc;
+    text-align: center;
+
+}
+
+.misson-strip strong{
+    color: white;
+}
+
+.misson-strip p{
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* team members cards */
+.team-subtitle {
+
+    font-size: 0.88rem;
+    color: #888;
+    margin-bottom: 0.5rem;
+}
+
+.team-card{
+    background-color: white;
+    border: 1px solid #e2e0da;
+    border-radius: 12px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+    height: 100%;
+}
+
+.team-card:hover {
+    transform : translateY(-4px);
+    box-shadow: 0 12px 28px rgba(53, 12, 31, 0.12);
+}
+
+.team-card .role{
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6FA9BB;
+    margin-bottom: 12px;
+
+}
+
+.team-card .bio{
+    font-size: 0.9rem;
+    color: #555;
+    margin: 0;
+
+}
+
+.avatar-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Playfair Display" , serif;
+    font-size: 1.5rem ;
+    font-weight: 700;
+    color: white;
+    margin: 0 auto 16px;
+    flex-shrink: 0;
+
+}
+
+.avatar-0{
+    background-color: #687d31;
+}
+.avatar-1{
+    background-color: #406768;
+}
+.avatar-2{
+    background-color: #6fa9bb;
+}
+.avatar-3{
+    background-color: #19350c;
+}
+.avatar-4{
+    background-color: #677d31d1;
+}
+
