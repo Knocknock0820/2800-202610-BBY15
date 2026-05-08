@@ -151,8 +151,7 @@
       }
       // If the .png also fails, show a placeholder
       else {
-        img.onerror = null; // Prevent infinite loops
-        img.src = '/images/default-lifecycle.jpg'; // Path to a generic backup image
+        img.src = '/images/error.png'; // Path to a generic backup image
         img.alt = "Image not available";
       }
     }
