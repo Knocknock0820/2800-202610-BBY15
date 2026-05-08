@@ -1,0 +1,192 @@
+/* Page specific styles for Details Page */
+body {
+  font-family: "DM Sans", sans-serif;
+  background-color: #f2f1ee;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+.app-logo {
+  font-family: "Playfair Display", serif;
+}
+
+.detail-card {
+  background-color: #d5d3cc;
+  border-radius: 16px;
+  border: none;
+}
+
+.plant-photo-placeholder {
+  aspect-ratio: 1 / 1;
+  background-color: #d5d3cc;
+  border: 5px solid #19350c;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #19350c;
+  font-weight: 600;
+  overflow: hidden; /* Added to clip image to the border-radius */
+}
+
+.care-icon {
+  object-fit: contain;
+}
+
+/* Tints a black icon to Orange-Red (#dc3545 approx) */
+.icon-sun {
+  filter: invert(26%) sepia(89%) saturate(1583%) hue-rotate(337deg)
+    brightness(91%) contrast(93%);
+}
+
+/* Tints a black icon to Blue (#0d6efd approx) */
+.icon-water {
+  filter: invert(31%) sepia(94%) saturate(4101%) hue-rotate(209deg)
+    brightness(101%) contrast(106%);
+}
+
+.icon-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1; /* Helps vertical alignment with the icon */
+}
+
+.life-cycle-container {
+  border-color: #687d31 !important;
+  border-width: 5px !important;
+  background-color: #f2f1ee; /* Matches your detail-card theme */
+}
+
+/* Fixed-Size Photo Container */
+.lifecycle-photo-wrapper {
+  width: 100%;
+  height: 50vh; /* Force a fixed height */
+  background-color: #e9e8e3;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lifecycle-photo-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures photos don't stretch, they crop to fit the 200px height */
+}
+
+.cycle-title {
+  color: #687d31;
+  font-family: "Playfair Display", serif;
+}
+
+/* Horizontal Button Row */
+.lifecycle-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.btn-stage {
+  background: none;
+  border: none;
+  color: #687d31;
+  opacity: 0.6;
+  font-size: 0.8rem;
+  padding: 5px 0;
+  transition: 0.3s;
+  border-bottom: 2px solid transparent;
+}
+
+.btn-stage.active {
+  opacity: 1;
+  border-bottom: 2px solid #19350c; /* Visual indicator for selected stage */
+}
+
+/* Container styling */
+.description-container {
+  border-color: #687d31 !important;
+  border-width: 5px !important;
+  min-height: 120px;
+}
+
+/* Title styling */
+.section-title {
+  color: #687d31;
+  font-family: "Playfair Display", serif;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Markdown Content Styling */
+.description-content {
+  font-family: "DM Sans", sans-serif; /* Consistent with your main page */
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Target the paragraphs generated from Markdown */
+.description-content p {
+  color: #687d31; /* Standard Bootstrap 'text-muted' color */
+  margin-bottom: 1rem;
+}
+
+/* Target any headers within the markdown */
+.description-content h1,
+.description-content h2,
+.description-content h3 {
+  color: #687d31; /* Matching your dark green navbar theme */
+  font-family: "Playfair Display", serif;
+  margin-top: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Target lists within the markdown */
+.description-content ul,
+.description-content ol {
+  color: #687d31;
+  padding-left: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Markdown Table Styles --- */
+
+/* Basic table layout */
+.description-content table {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background-color: #ffffff; /* Contrast against the card background */
+  border-radius: 8px;
+  overflow: hidden; /* Rounds the corners of the table */
+}
+
+/* Header styling */
+.description-content th {
+  background-color: #687d31; /* Your theme's green */
+  color: #ffffff;
+  font-family: "Playfair Display", serif;
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* Cell styling */
+.description-content td {
+  padding: 10px;
+  color: #6c757d; /* Consistent 'text-muted' color [cite: 6] */
+}
+
+/* Zebra striping for better readability */
+.description-content tr:nth-child(even) {
+  background-color: #f9f8f6;
+}
+
+/* Hover effect */
+.description-content tr:hover {
+  background-color: #f2f1ee;
+}

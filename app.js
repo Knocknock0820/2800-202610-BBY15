@@ -1,4 +1,4 @@
-// Setting up server, routes, and connecting to MongoDB all hand written. 
+// Setting up server, routes, and connecting to MongoDB all hand written.
 // Unless mentioned otherwise in the comments.
 // Modified by: Harun Yaprak
 
@@ -9,6 +9,10 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+
+const fs = require("fs"); // Built-in Node.js File System module
+const path = require("path"); // Built-in Path module
+const { marked } = require("marked");
 
 const weatherApiRouter = require("./routes/weatherApi");
 
@@ -39,8 +43,8 @@ const plantCollection = database
   This function will be changed in the future,
    after we figured out how to implement the database  */
 
-   // This code is handwritten, but got help from AI.
-   //Modified by: Harun Yaprak
+// This code is handwritten, but got help from AI.
+//Modified by: Harun Yaprak
 async function seedPlants() {
   try {
     const count = await plantCollection.countDocuments();
@@ -52,7 +56,7 @@ async function seedPlants() {
         { name: "Peace Lily", waterFreq: "Every 3 days" },
         { name: "Spider Plant", waterFreq: "Every week" },
         { name: "Pothos", waterFreq: "Every 1-2 weeks" },
-        { name: "Aloe Vera", waterFreq: "Every 2-3 weeks" }
+        { name: "Aloe Vera", waterFreq: "Every 2-3 weeks" },
       ];
       await plantCollection.insertMany(defaultPlants);
       console.log("Seeded default plant types into database.");
@@ -102,7 +106,10 @@ app.get("/", requiredLogin, (req, res) => {
 //Modified by: Harun Yaprak
 app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
-    const plants = await plantCollection.find({}).project({_id: 1, name: 1, waterFreq: 1}).toArray();
+    const plants = await plantCollection
+      .find({})
+      .project({ _id: 1, name: 1, waterFreq: 1 })
+      .toArray();
     res.json(plants);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch plants" });
@@ -205,8 +212,31 @@ app.get("/community", requiredLogin, (req, res) => {
 });
 
 // Render the details page
-app.get("/details", requiredLogin, (req, res) => {
-  res.render("details.ejs", { name: req.session.username });
+app.get("/details/:species", requiredLogin, async (req, res) => {
+  const species = req.params.species;
+  const filePath = path.join(
+    __dirname,
+    "public",
+    "descriptions",
+    `${species}.md`,
+  );
+
+  let descriptionHtml = "";
+
+  try {
+    // Read the file content synchronously (simplest for this use case)
+    const markdownString = fs.readFileSync(filePath, "utf8");
+    // Convert to HTML
+    descriptionHtml = marked.parse(markdownString);
+  } catch (err) {
+    // Fallback if the file doesn't exist
+    descriptionHtml = `<p>No detailed description found for ${species}. Check back later!</p>`;
+  }
+
+  res.render("details.ejs", {
+    species: req.params.species,
+    descriptionHtml: descriptionHtml,
+  });
 });
 
 // Handle logout
