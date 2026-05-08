@@ -301,6 +301,53 @@ function savePlant() {
   renderPlants(); // refresh the list to show the new card
 }
 
+// User Guide Walkthrough Logic
+
+const guideData = [
+  {
+    img: "/images/guide_step1.png",
+    text: "Welcome to Sprout! We are excited to help you on your plant care journey. This quick guide will show you how to make the most of our app and keep your green friends thriving!",
+  },
+  {
+    img: "/images/guide_step2.png",
+    text: "Ready to grow? Tap the plus button to log your very first plant and start your gardening journey today!",
+  },
+  {
+    img: "/images/guide_step3.png",
+    text: "Identify your species and drop a nickname to begin your tracking journey! Pick the correct match to keep your plant healthy and your data accurate!",
+  },
+  {
+    img: "/images/guide_step4.png",
+    text: "Tap on your plant card to see your daily checklist and click the details button for more information.",
+  },
+  {
+    img: "/images/guide_step5.png",
+    text: "Details page includes care instructions, watering schedule, and fun facts about your plant. Check back often for updates and tips!",
+  },
+];
+
+let currentGuideStep = 0;
+
+function navigateGuide(direction) {
+  const guideImg = document.getElementById("guidePhotoDisplay");
+  const guideText = document.getElementById("guideDescription");
+
+  if (!guideImg || !guideText) return;
+
+  currentGuideStep += direction;
+
+  // Loop logic
+  if (currentGuideStep < 0) {
+    currentGuideStep = guideData.length - 1;
+  } else if (currentGuideStep >= guideData.length) {
+    currentGuideStep = 0;
+  }
+
+  // Update both the photo and the text
+  guideImg.src = guideData[currentGuideStep].img;
+  guideText.innerText = guideData[currentGuideStep].text;
+}
+
 function initModal() {
   fetchPlantTypes();
 
