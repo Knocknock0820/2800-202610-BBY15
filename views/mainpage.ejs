@@ -177,6 +177,20 @@
 
   <!-- External JS file — all client-side logic lives here -->
   <script src="/js/main.js"></script>
+
+  <% if (locals.firstLogin) { %>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var userGuideModal = new bootstrap.Modal(document.getElementById('userGuideModal'));
+        userGuideModal.show();
+
+        // Remove the query parameter from the URL to prevent showing it again on refresh
+        const url = new URL(window.location);
+        url.searchParams.delete('firstLogin');
+        window.history.replaceState({}, '', url);
+      });
+    </script>
+  <% } %>
 </body>
 
 </html>
