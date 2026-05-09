@@ -99,7 +99,10 @@ app.use(
 
 // Render the main page
 app.get("/", requiredLogin, (req, res) => {
-  res.render("mainpage.ejs", { name: req.session.username });
+  res.render("mainpage.ejs", { 
+    name: req.session.username,
+    firstLogin: req.query.firstLogin === 'true'
+  });
 });
 
 // API endpoint to fetch plant types
@@ -198,7 +201,7 @@ app.post("/signup", async (req, res) => {
   req.session.email = email;
   req.session.username = username;
   req.session.cookie.maxAge = expireTime;
-  res.redirect("/");
+  res.redirect("/?firstLogin=true");
 });
 
 // Render the profile page

@@ -164,9 +164,8 @@ body {
 #userGuideModal #guidePhotoDisplay {
   width: 100%;
   height: 100%;
-  /* 'cover' fills the box and crops the edges (hides overflow) */
-  /* 'contain' would show the whole image with bars on the sides */
-  object-fit: cover;
+  /* 'contain' shows the whole image without cropping */
+  object-fit: contain;
   display: block;
 }
 
