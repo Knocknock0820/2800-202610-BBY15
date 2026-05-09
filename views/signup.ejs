@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up - 🌱 Sprout</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/css/login.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="row justify-content-center align-items-center vh-100">
+        <div class="col-12 col-md-5 col-lg-4">
+          <div class="text-center mb-4">
+            <h2 class="fw-bold login-title">Create Account</h2>
+            <p class="text-muted custom-subtitle">
+              Start taking care of your plants today
+            </p>
+          </div>
+
+          <div class="card login-card p-4">
+            <form action="/signup" method="POST">
+              <div class="mb-3">
+                <label
+                  for="username"
+                  class="form-label small fw-bold text-muted"
+                  >Username</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  name="username"
+                  placeholder="yourname"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="email" class="form-label small fw-bold text-muted"
+                  >Email Address</label
+                >
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  required
+                />
+              </div>
+
+              <div class="mb-4">
+                <label
+                  for="password"
+                  class="form-label small fw-bold text-muted"
+                  >Password</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  name="password"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-login">Sign Up</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="text-center mt-4">
+            <p class="small text-muted custom-subtitle">
+              Already have an account?
+              <a
+                href="/login"
+                class="fw-bold signup-link"
+                style="color: #687d31"
+                >Log In</a
+              >
+            </p>
+            <a
+              href="/landing"
+              class="small text-muted back-link custom-subtitle"
+              >&larr; Back to Landing Page</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

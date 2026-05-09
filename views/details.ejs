@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    <%= species %> Details
+  </title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="/css/mainpage.css" />
+
+  <link rel="stylesheet" href="/css/details.css" />
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark custom-navbar" style="background-color: #19350c;">
+    <div class="container-fluid px-3">
+      <a class="navbar-brand fw-bold app-logo" href="/" style="color: white;">🌱 Sprout</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/about">About Us</a>
+          </li>
+          <li class="nav-item">
+            <form action="/logout" method="POST" class="d-inline">
+              <button type="submit" class="nav-link btn btn-link border-0 text-start text-white">Logout</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mt-4 mb-5 pb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="fw-bold mb-0 text-capitalize" style="color: #19350c;">
+        <%= species %>
+      </h2>
+      <span class="badge rounded-pill"
+        style="background-color: transparent; color: #19350c; font-size: 1rem; border: 0;">
+        Difficulty:
+        <span style="color: #0488b1;">Easy</span>
+      </span>
+    </div>
+
+    <div class="plant-photo-placeholder mb-4 shadow-sm overflow-hidden">
+      <img id="plantImage" src="/images/<%= species %>.jpg" alt="<%= species %>" class="img-fluid w-100 h-100"
+        style="object-fit: cover;" onerror="tryPng(this)">
+    </div>
+
+    <div class="mb-4 px-2">
+      <div class="d-flex align-items-center mb-3">
+        <img src="/icons/sun.png" alt="Sunlight" width="28" height="28" class="care-icon icon-sun">
+        <span class="ms-3 icon-text" style="color: #dc3545;">6-8 hrs</span>
+      </div>
+      <!-- <a href="https://www.flaticon.com/free-icons/sun" title="sun icons">Sun icons created by Good Ware - Flaticon</a> -->
+
+      <div class="d-flex align-items-center">
+        <img src="/icons/h2o.png" alt="Water" width="28" height="28" class="care-icon icon-water">
+        <span class="ms-3 icon-text" style="color: #0d6efd;">full pour / 2 day</span>
+      </div>
+    </div>
+    <!-- <a href="https://www.flaticon.com/free-icons/water" title="water icons">Water icons created by Freepik - Flaticon</a> -->
+
+
+    <div class="card detail-card mb-4 border life-cycle-container">
+      <div class="card-body text-center">
+        <div class="d-flex justify-content-center align-items-center mb-3">
+          <h5 class="fw-bold mb-0 cycle-title">Life Cycle</h5>
+        </div>
+
+        <div class="lifecycle-photo-wrapper mb-3 shadow-sm">
+          <img id="lifecycleDisplay" src="/images/<%= species %>_seed.jpg" onerror="tryPng(this)" alt="Plant Stage"
+            class="img-fluid">
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center small fw-bold lifecycle-buttons">
+          <button class="btn-stage active" onclick="changeStage(this, 'seed')">Seed</button>
+          <button class="btn-stage" onclick="changeStage(this, 'sprout')">Sprout</button>
+          <button class="btn-stage" onclick="changeStage(this, 'mature')">Mature</button>
+          <button class="btn-stage" onclick="changeStage(this, 'flower')">Flower</button>
+          <button class="btn-stage" onclick="changeStage(this, 'harvest')">Harvest</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function changeStage(btnElement, stageName) {
+        const displayImg = document.getElementById('lifecycleDisplay');
+
+        // 1. Update Image Source
+        // We start with .jpg, and the existing tryPng(this) handles the fallback
+        displayImg.src = `/images/<%= species %>_${stageName}.jpg`;
+
+        // 2. Update Button UI
+        document.querySelectorAll('.btn-stage').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+      }
+    </script>
+
+    <div class="card detail-card border description-container">
+      <div class="card-body">
+        <h2 class="section-title">Description</h2>
+        <div class="description-content">
+          <%- descriptionHtml %>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="/community">
+      <button class="nav-tab" title="Community">
+        <img src="/icons/group.png" alt="Community" class="nav-icon" />
+      </button>
+    </a>
+
+    <a href="/">
+      <button class="nav-tab" title="Home">
+        <img src="/icons/home.png" alt="Home" class="nav-icon" />
+      </button>
+    </a>
+
+    <a href="/profile">
+      <button class="nav-tab" title="Profile">
+        <img src="/icons/account.png" alt="Profile" class="nav-icon" />
+      </button>
+    </a>
+  </nav>
+
+  <script>
+    function tryPng(img) {
+      // Check if we are currently looking for a .jpg
+      if (img.src.includes('.jpg')) {
+        img.src = img.src.replace('.jpg', '.png');
+      }
+      // If the .png also fails, show a placeholder
+      else {
+        img.src = '/images/error.png'; // Path to a generic backup image
+        img.alt = "Image not available";
+      }
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
