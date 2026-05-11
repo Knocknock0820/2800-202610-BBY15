@@ -2,48 +2,14 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Welcome to Our Plant App</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
 
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+<head>
+  <%- include('partials/head', { title: 'About Us - 🌱 Sprout', pageCSS: '/css/aboutus.css' }) %>
+</head>
 
-    <link rel="stylesheet" href="/css/aboutus.css" />
-  </head>
-
-
-  <body>
-    <!--NAv Bar-->
-    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar">
-      <div class="container">
-          <a class="navbar-brand fw-bold" href="/">Sprout</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarNav">
-              <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                  <a class="nav-link" href="/">Plants</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link active" href="/landing">Home</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="/about">About Us</a>
-                </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-  
+<body>
+  <!-- Nav Bar -->
+  <%- include('partials/navbar', { showLogout: true , activeLink: 'about' }) %>
 
     <!--page header-->
     <header class="about-header">
@@ -119,11 +85,9 @@
       </div>
     </div>
   </section>
-<footer>
-  2026 Sprout · Team BBY15 · BCIT
-</footer>
 
+ <%- include('partials/footer', { showBottomNav: true, activeTab: '', showCopyright: true }) %>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+</body>
+
 </html>

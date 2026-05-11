@@ -2,47 +2,16 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>
-    <%= species %> Details
-  </title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap"
-    rel="stylesheet" />
-
+  <%- include('partials/head', {
+    title: species + ' Details',
+    pageCSS: '/css/details.css'
+  }) %>
+  <!-- details.css already imports mainpage.css; if not, add: -->
   <link rel="stylesheet" href="/css/mainpage.css" />
-
-  <link rel="stylesheet" href="/css/details.css" />
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark custom-navbar" style="background-color: #19350c;">
-    <div class="container-fluid px-3">
-      <a class="navbar-brand fw-bold app-logo" href="/" style="color: white;">App Name</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/about">About Us</a>
-          </li>
-          <li class="nav-item">
-            <form action="/logout" method="POST" class="d-inline">
-              <button type="submit" class="nav-link btn btn-link border-0 text-start text-white">Logout</button>
-            </form>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
+  <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
 
   <main class="container mt-4 mb-5 pb-5">
 
@@ -75,7 +44,6 @@
       </div>
     </div>
     <!-- <a href="https://www.flaticon.com/free-icons/water" title="water icons">Water icons created by Freepik - Flaticon</a> -->
-
 
     <div class="card detail-card mb-4 border life-cycle-container">
       <div class="card-body text-center">
@@ -123,26 +91,6 @@
 
   </main>
 
-  <nav class="bottom-nav">
-    <a href="/community">
-      <button class="nav-tab" title="Community">
-        <img src="/icons/group.png" alt="Community" class="nav-icon" />
-      </button>
-    </a>
-
-    <a href="/">
-      <button class="nav-tab" title="Home">
-        <img src="/icons/home.png" alt="Home" class="nav-icon" />
-      </button>
-    </a>
-
-    <a href="/profile">
-      <button class="nav-tab" title="Profile">
-        <img src="/icons/account.png" alt="Profile" class="nav-icon" />
-      </button>
-    </a>
-  </nav>
-
   <script>
     function tryPng(img) {
       // Check if we are currently looking for a .jpg
@@ -158,7 +106,7 @@
     }
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <%- include('partials/footer', { showBottomNav: true, activeTab: '' }) %>
 </body>
 
 </html>
