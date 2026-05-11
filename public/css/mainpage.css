@@ -113,18 +113,16 @@ body {
 
 /* Style for the User Guide icon in the navbar */
 .nav-guide-icon {
-  /* Updated filter to hit the #d5d3cc (off-white) target */
-  filter: invert(99%) sepia(1%) saturate(1476%) hue-rotate(182deg)
-    brightness(95%) contrast(84%);
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
   cursor: pointer;
+  opacity: 0.85;
 }
 
 .nav-guide-icon:hover {
   transform: scale(1.1);
-  opacity: 1; /* Make it pop more on hover */
+  opacity: 1;
 }
 
 /* Optional: Ensure the button doesn't show a blue outline when clicked */
