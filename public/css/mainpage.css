@@ -69,7 +69,6 @@ body {
   gap: 10px;
 }
 
-
 /* ---------- BOTTOM NAVIGATION BAR ---------- */
 .bottom-nav {
   position: fixed;
@@ -110,3 +109,71 @@ body {
   filter: invert(1) opacity(1);
 }
 
+/* --- User Guide Modal Custom Sizing --- */
+
+/* Style for the User Guide icon in the navbar */
+.nav-guide-icon {
+  /* Updated filter to hit the #d5d3cc (off-white) target */
+  filter: invert(99%) sepia(1%) saturate(1476%) hue-rotate(182deg)
+    brightness(95%) contrast(84%);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-guide-icon:hover {
+  transform: scale(1.1);
+  opacity: 1; /* Make it pop more on hover */
+}
+
+/* Optional: Ensure the button doesn't show a blue outline when clicked */
+.btn:focus,
+.btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#userGuideModal .modal-dialog {
+  max-width: 90vw;
+  width: 90vw;
+  margin: 1.75rem auto;
+}
+
+#userGuideModal .modal-content {
+  /* The whole modal will now adjust its height based on the fixed parts inside */
+  background-color: #d5d3cc;
+  border-radius: 16px;
+  border: 2px solid #687d31;
+}
+
+/* The Placeholder: FIXED DIMENSIONS */
+#userGuideModal .guide-photo-placeholder {
+  width: 100%; /* 100% of the modal width */
+  height: 50vh; /* FIXED: Always 50% of screen height */
+  background: #e9e8e3;
+  border-radius: 12px;
+  overflow: hidden; /* This hides the "overflow part" of the image */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* The Image: FILLS THE FIXED BOX */
+#userGuideModal #guidePhotoDisplay {
+  width: 100%;
+  height: 100%;
+  /* 'contain' shows the whole image without cropping */
+  object-fit: contain;
+  display: block;
+}
+
+.modal-backdrop.show {
+  opacity: 0.8;
+  background-color: #19350c; /* Your theme's dark green */
+}
+
+.guide-photo-placeholder {
+  border: 1px solid rgba(104, 125, 49, 0.2);
+}

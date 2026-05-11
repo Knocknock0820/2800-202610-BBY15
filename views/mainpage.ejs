@@ -9,41 +9,32 @@
   <!-- ===== HEADER ===== -->
   <%- include('partials/navbar', { showLogout: true, activeLink: 'home' }) %>
 
-    <!-- ===== WEATHER STRIP ===== -->
-    <div class="weather-strip">
-      <span id="weatherText">Loading weather…</span>
+  <!-- ===== WEATHER STRIP ===== -->
+  <div class="weather-strip">
+    <span id="weatherText">Loading weather…</span>
+  </div>
+
+  <!-- ===== PLANT LIST ===== -->
+  <main class="plants-main container mt-3">
+    <h2 class="my-plants-title mb-1">Hello, <%= name %>! 👋</h2>
+    <p class="text-muted mb-3">Here are your plants:</p>
+    <div class="plant-list" id="plantList">
+      <!-- Plant cards are injected here by main.js -->
     </div>
+  </main>
 
-    <!-- ===== PLANT LIST ===== -->
-    <main class="plants-main container mt-3">
-      <h2 class="my-plants-title mb-1">Hello, <%= name %>! 👋</h2>
-      <p class="text-muted mb-3">Here are your plants:</p>
-      <div class="plant-list" id="plantList">
-        <!-- Plant cards are injected here by main.js -->
-      </div>
-    </main>
+  <!-- ===== FLOATING ADD BUTTON (FAB) ===== -->
+  <button class="btn btn-primary rounded-circle shadow" id="btnAdd" title="Add plant" data-bs-toggle="modal"
+    data-bs-target="#addPlantModal"
+    style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; z-index: 1000; background-color: #687d31; border: none; display: flex; align-items: center; justify-content: center;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  </button>
 
-    <!-- ===== FLOATING ADD BUTTON (FAB) ===== -->
-    <button class="btn btn-primary rounded-circle shadow" id="btnAdd" title="Add plant" 
-            data-bs-toggle="modal" data-bs-target="#addPlantModal"
-            style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; z-index: 1000; background-color: #687d31; border: none; display: flex; align-items: center; justify-content: center;">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-    </button>
-
-    <!-- code adopted from boostrap : https://getbootstrap.com/docs/5.3/components/modal/
+  <!-- code adopted from boostrap : https://getbootstrap.com/docs/5.3/components/modal/
     Modified by: Harun Yaprak -->
   <!-- ===== ADD PLANT MODAL (Bootstrap native) ===== -->
   <div class="modal fade" id="addPlantModal" tabindex="-1" aria-labelledby="addPlantModalLabel" aria-hidden="true">
@@ -116,7 +107,4 @@
   <!-- ===== BOTTOM NAVIGATION BAR ===== -->
   <%- include('partials/footer', { showBottomNav: true, activeTab: 'home' }) %>
 
-    <!-- External JS file — all client-side logic lives here -->
-    <script src="/js/main.js"></script>
-  </body>
 </html>
