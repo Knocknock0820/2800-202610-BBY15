@@ -15,6 +15,7 @@ const path = require("path"); // Built-in Path module
 const { marked } = require("marked");
 
 const weatherApiRouter = require("./routes/weatherApi");
+const { seedPlants } = require("./public/js/seedPlants");
 
 const app = express();
 const port = 3000;
@@ -38,34 +39,7 @@ const userCollection = database
 const plantCollection = database
   .db(mongodb_user_database)
   .collection("plant-types");
-
-/* Seed example plants types to database on startup (if database is empty)
-  This function will be changed in the future,
-   after we figured out how to implement the database  */
-
-// This code is handwritten, but got help from AI.
-//Modified by: Harun Yaprak
-async function seedPlants() {
-  try {
-    const count = await plantCollection.countDocuments();
-    if (count === 0) {
-      const defaultPlants = [
-        { name: "Monstera", waterFreq: "Every week" },
-        { name: "Snake Plant", waterFreq: "Once a month" },
-        { name: "Cactus", waterFreq: "Every 2 weeks" },
-        { name: "Peace Lily", waterFreq: "Every 3 days" },
-        { name: "Spider Plant", waterFreq: "Every week" },
-        { name: "Pothos", waterFreq: "Every 1-2 weeks" },
-        { name: "Aloe Vera", waterFreq: "Every 2-3 weeks" },
-      ];
-      await plantCollection.insertMany(defaultPlants);
-      console.log("Seeded default plant types into database.");
-    }
-  } catch (err) {
-    console.error("Error seeding plants:", err);
-  }
-}
-seedPlants();
+seedPlants(plantCollection);
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
@@ -99,9 +73,9 @@ app.use(
 
 // Render the main page
 app.get("/", requiredLogin, (req, res) => {
-  res.render("mainpage.ejs", { 
+  res.render("mainpage.ejs", {
     name: req.session.username,
-    firstLogin: req.query.firstLogin === 'true'
+    firstLogin: req.query.firstLogin === "true",
   });
 });
 
