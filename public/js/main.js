@@ -31,6 +31,8 @@ async function loadWeather() {
           );
           if (!res.ok) throw new Error("Weather error");
           const data = await res.json();
+          window.currentTemperature = data.temp;
+          updateTemperatureAlerts();
           showWeather(data.temp, data.city);
         } catch {
           el.textContent = "Weather unavailable";
@@ -56,6 +58,8 @@ async function loadWeatherByIP() {
     const res = await fetch("/api/weather/ip");
     if (!res.ok) throw new Error("Weather error");
     const data = await res.json();
+    window.currentTemperature = data.temp;
+    updateTemperatureAlerts();
     showWeather(data.temp, data.city);
   } catch {
     el.textContent = "Weather unavailable";
@@ -116,6 +120,18 @@ function createPlantCard(plant) {
     }
   }
 
+  let isInShade = false;
+  if (plant.movedToShadeAt) {
+    const shadeTime = new Date(plant.movedToShadeAt).getTime();
+    if (now - shadeTime < 8 * 60 * 60 * 1000) {
+      isInShade = true;
+    }
+  }
+
+  const maxTemp = getPlantMaxTemp(plant.species);
+  const isTooHot = (typeof window.currentTemperature !== 'undefined') && (window.currentTemperature > maxTemp);
+  const showSunIcon = isTooHot && !isInShade;
+
   wrapper.innerHTML = `
     <!-- Bootstrap Card -->
     <div class="card mb-3 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; background-color: #d5d3cc;">
@@ -126,7 +142,11 @@ function createPlantCard(plant) {
            role="button" aria-expanded="false" 
            style="cursor: pointer; padding: 16px 24px; color: #19350c; background-color: transparent; border-bottom: none;">
         <span>${displayName}</span>
-        <small class="text-muted" style="font-size: 0.7em;">▼</small>
+        <div class="d-flex align-items-center gap-2">
+          <img src="/icons/sun.png" id="temp-alert-${plant.id}" alt="Too Hot" style="width: 20px; height: 20px; ${showSunIcon ? '' : 'display: none;'} filter: invert(56%) sepia(85%) saturate(3015%) hue-rotate(1deg) brightness(103%) contrast(105%);" title="Too Hot!">
+          <img src="/icons/h2o.png" id="water-alert-${plant.id}" alt="Needs Water" style="width: 20px; height: 20px; ${isWatered ? 'display: none;' : ''} filter: invert(37%) sepia(87%) saturate(1637%) hue-rotate(194deg) brightness(101%) contrast(101%);" title="Needs Water">
+          <small class="text-muted" style="font-size: 0.7em;">▼</small>
+        </div>
       </div>
       
       <!-- Collapsible Body -->
@@ -140,6 +160,16 @@ function createPlantCard(plant) {
               <input class="form-check-input water-checkbox m-0" type="checkbox" id="check${plant.id}" ${isWatered ? "checked" : ""} style="width: 18px; height: 18px; accent-color: #687d31;">
               <label class="form-check-label" for="check${plant.id}" style="color: #19350c; font-size: 0.9rem;">
                 Watering Schedule: ${plant.waterFreq}
+              </label>
+            </div>
+          </div>
+          
+          <!-- Move Plant To Shade Checklist -->
+          <div class="form-check mb-3 p-3 shade-container" id="shade-container-${plant.id}" style="background-color: #f2f1ee; border-radius: 12px; margin-left: 0; padding-left: 12px; ${(isTooHot || isInShade) ? 'display: block;' : 'display: none;'}">
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-check-input shade-checkbox m-0" type="checkbox" id="shade${plant.id}" ${isInShade ? "checked" : ""} style="width: 18px; height: 18px; accent-color: #687d31;">
+              <label class="form-check-label" for="shade${plant.id}" style="color: #19350c; font-size: 0.9rem;">
+                Move Plant To Shade
               </label>
             </div>
           </div>
@@ -163,6 +193,26 @@ function createPlantCard(plant) {
   if (checkbox) {
     checkbox.addEventListener("change", (e) => {
       updatePlantWateredState(plant.id, e.target.checked);
+      const alertIcon = card.querySelector(`#water-alert-${plant.id}`);
+      if (alertIcon) {
+        alertIcon.style.display = e.target.checked ? "none" : "block";
+      }
+    });
+  }
+
+  // Attach listener to shade checkbox
+  // Adopted from AI
+  // Modified by: Harun Yaprak
+  const shadeCheckbox = card.querySelector(".shade-checkbox");
+  if (shadeCheckbox) {
+    shadeCheckbox.addEventListener("change", (e) => {
+      updatePlantShadeState(plant.id, e.target.checked);
+      const alertIcon = card.querySelector(`#temp-alert-${plant.id}`);
+      if (alertIcon) {
+        const maxTemp = getPlantMaxTemp(plant.species);
+        const isCurrentlyHot = (typeof window.currentTemperature !== 'undefined') && (window.currentTemperature > maxTemp);
+        alertIcon.style.display = (isCurrentlyHot && !e.target.checked) ? "block" : "none";
+      }
     });
   }
 
@@ -195,6 +245,16 @@ function updatePlantWateredState(id, isWatered) {
   }
 }
 
+// Update the shade state of a plant
+function updatePlantShadeState(id, inShade) {
+  const plants = loadPlants();
+  const index = plants.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    plants[index].movedToShadeAt = inShade ? new Date().toISOString() : null;
+    savePlants(plants);
+  }
+}
+
 function getIntervalDays(freqStr) {
   if (!freqStr) return 7;
   const str = freqStr.toLowerCase();
@@ -206,6 +266,53 @@ function getIntervalDays(freqStr) {
   if (str.includes("week") && str.includes("2")) return 14;
   if (str.includes("month")) return 30;
   return 7; // default to 1 week
+}
+
+// After we implement plant database, we can remove this function and just get the data from the database
+// Currently used to get max temperature tolerance for a plant species
+function getPlantMaxTemp(species) {
+  const temps = {
+    "Monstera": 10,
+    "Snake Plant": 35,
+    "Cactus": 40,
+    "Peace Lily": 28,
+    "Spider Plant": 32,
+    "Pothos": 32,
+    "Aloe Vera": 35
+  };
+  return temps[species] || 30; // default 30°C if not specified
+}
+
+// Update temperature alerts for all rendered cards dynamically
+// Adapted from AI, used to show temperature alerts for plants
+// Modified by: Harun Yaprak
+function updateTemperatureAlerts() {
+  if (typeof window.currentTemperature === 'undefined') return;
+  const plants = loadPlants();
+  const now = Date.now();
+  plants.forEach(plant => {
+    let isInShade = false;
+    if (plant.movedToShadeAt) {
+      const shadeTime = new Date(plant.movedToShadeAt).getTime();
+      if (now - shadeTime < 8 * 60 * 60 * 1000) {
+        isInShade = true;
+      }
+    }
+    const maxTemp = getPlantMaxTemp(plant.species);
+    const isTooHot = window.currentTemperature > maxTemp;
+
+    // Toggle Sun Icon
+    const alertIcon = document.getElementById(`temp-alert-${plant.id}`);
+    if (alertIcon) {
+      alertIcon.style.display = (isTooHot && !isInShade) ? 'block' : 'none';
+    }
+
+    // Toggle Shade Checkbox Container
+    const shadeContainer = document.getElementById(`shade-container-${plant.id}`);
+    if (shadeContainer) {
+      shadeContainer.style.display = (isTooHot || isInShade) ? 'block' : 'none';
+    }
+  });
 }
 
 // Render all plants from storage into #plantList
