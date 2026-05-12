@@ -1,11 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Community</title>
-  </head>
-  <body>
-    <h1>Hello community</h1>
-  </body>
+
+<head>
+  <%- include('partials/head', {title: 'Community - 🌱 Sprout', pageCSS: '/css/community.css'}) %>
+</head>
+
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <%- include('partials/navbar', {showLogout: true, activeLink: 'community'}) %>
+
+  <!-- ===== HERO / JUMBOTRON ===== -->
+  <!-- code adopted from Bootstrap Album example: https://getbootstrap.com/docs/5.3/examples/album/
+       Modified by: Harun Yaprak — adapted hero + card grid to single-column mobile layout with Sprout theme -->
+  <section class="community-hero py-4 text-center">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-6 col-md-8 mx-auto">
+          <h1 class="community-title fw-light">🌿 Community Garden</h1>
+          <p class="lead community-subtitle">
+            Share your plant journey, swap care tips, and celebrate every bloom with fellow Sprout growers.
+          </p>
+          <p>
+            <button class="btn btn-sprout-primary my-2" id="btnNewPost" data-bs-toggle="modal" data-bs-target="#newPostModal">
+              ✏️ Share a Post
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ALBUM / CARD GRID ===== -->
+  <div class="album py-4">
+    <div class="container">
+      <!-- row-cols-1 = always single column on mobile -->
+      <div class="row row-cols-1 g-3" id="communityPosts">
+
+        <!-- Post Card 1 -->
+        <div class="col">
+          <div class="card community-card shadow-sm">
+            <img src="/images/monstera_mature.jpg" class="card-img-top" alt="Monstera plant" />
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <div class="post-avatar me-2">🌱</div>
+                <div>
+                  <strong class="post-author">PlantLover42</strong>
+                  <small class="text-muted d-block">2 hours ago</small>
+                </div>
+              </div>
+              <p class="card-text">My Monstera finally unfurled a new leaf! 🥳 Three months of patience and consistent watering paid off. Any tips on getting more fenestrations?</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-sprout">❤️ 24</button>
+                </div>
+                <small class="text-body-secondary">Monstera</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Card 2 -->
+        <div class="col">
+          <div class="card community-card shadow-sm">
+            <img src="/images/monstera_sprout.jpg" class="card-img-top" alt="New plant sprout" />
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <div class="post-avatar me-2">🪴</div>
+                <div>
+                  <strong class="post-author">GreenThumb99</strong>
+                  <small class="text-muted d-block">5 hours ago</small>
+                </div>
+              </div>
+              <p class="card-text">Started propagating from a cutting last month — look at these roots! Water propagation really works. Sharing my step-by-step in the comments below.</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-sprout">❤️ 31</button>
+                </div>
+                <small class="text-body-secondary">Propagation</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Card 3 -->
+        <div class="col">
+          <div class="card community-card shadow-sm">
+            <img src="/images/monstera_flower.jpg" class="card-img-top" alt="Flowering plant" />
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <div class="post-avatar me-2">🌸</div>
+                <div>
+                  <strong class="post-author">UrbanJungle</strong>
+                  <small class="text-muted d-block">Yesterday</small>
+                </div>
+              </div>
+              <p class="card-text">Never expected my indoor Monstera to bloom! Has anyone else had this happen? I think the extra humidity from my humidifier did the trick. 🌺</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-sprout">❤️ 56</button>
+                </div>
+                <small class="text-body-secondary">Rare Blooms</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Card 4 -->
+        <div class="col">
+          <div class="card community-card shadow-sm">
+            <img src="/images/monstera_harvest.jpg" class="card-img-top" alt="Plant harvest" />
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <div class="post-avatar me-2">🍃</div>
+                <div>
+                  <strong class="post-author">LeafyDreams</strong>
+                  <small class="text-muted d-block">2 days ago</small>
+                </div>
+              </div>
+              <p class="card-text">Harvested some healthy cuttings to share with friends this weekend. Nothing beats the joy of spreading the plant love! 💚 Who wants one?</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-sprout">❤️ 43</button>
+                </div>
+                <small class="text-body-secondary">Plant Swap</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NEW POST MODAL ===== -->
+  <!-- code adopted from Bootstrap: https://getbootstrap.com/docs/5.3/components/modal/
+       Modified by: Harun Yaprak --> 
+  <div class="modal fade" id="newPostModal" tabindex="-1" aria-labelledby="newPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #f2f1ee; border-radius: 24px;">
+        <div class="modal-header border-0 pb-0 mt-2">
+          <h5 class="modal-title fw-bold mx-auto" id="newPostModalLabel"
+            style="color: #19350c; font-family: 'Playfair Display', serif; font-size: 1.3rem;">Share with the Community</h5>
+          <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal"
+            aria-label="Close"></button>
+        </div>
+        <div class="modal-body px-4 pt-3">
+          <div class="mb-3">
+            <label for="postContent" class="form-label fw-bold small mb-1"
+              style="color: #687d31; text-transform: uppercase; letter-spacing: 0.05em;">What's growing?</label>
+            <textarea class="form-control" id="postContent" rows="4" placeholder="Share your plant update, tip, or question…"
+              style="border-radius: 12px; padding: 12px 14px; border: 1.5px solid #d5d3cc; box-shadow: none; resize: none;"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="postPhoto" class="form-label fw-bold small mb-1"
+              style="color: #687d31; text-transform: uppercase; letter-spacing: 0.05em;">Add a photo</label>
+            <input type="file" class="form-control" id="postPhoto" accept="image/*"
+              style="border-radius: 12px; border: 1.5px solid #d5d3cc; box-shadow: none;" />
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 px-4 pb-4 d-flex gap-2">
+          <button type="button" class="btn flex-fill" data-bs-dismiss="modal"
+            style="border: 1.5px solid #d5d3cc; border-radius: 12px; color: #687d31; font-weight: 600; padding: 12px;">Cancel</button>
+          <button type="button" class="btn flex-fill" id="btnSubmitPost"
+            style="background-color: #687d31; color: #d5d3cc; border-radius: 12px; font-weight: 600; padding: 12px; border: none;">Post 🌱</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM NAVIGATION BAR ===== -->
+  <%- include('partials/footer', { showBottomNav: true, activeTab: 'community', showCopyright: true }) %>
+</body>
+
 </html>
