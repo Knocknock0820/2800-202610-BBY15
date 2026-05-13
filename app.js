@@ -9,6 +9,10 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
+//const upload = require("./middleware/upload"); //shivika added hehe
 
 const fs = require("fs"); // Built-in Node.js File System module
 const path = require("path"); // Built-in Path module
@@ -40,6 +44,10 @@ const plantCollection = database
   .db(mongodb_user_database)
   .collection("plant-types");
 
+const postCollection = database
+  .db(mongodb_user_database)
+  .collection("community-posts");
+
 // Load plant files and seed on startup
 (async () => {
   try {
@@ -62,6 +70,26 @@ var mongoStore = MongoStore.create({
   crypto: { secret: mongodb_session_secret },
 });
 
+// Adapted from Cloudinary Upload Tutorial: https://www.youtube.com/watch?v=2Z1oKtxleb4
+// Modified by: Harun Yaprak
+// ======================================
+// Set up Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "community_uploads", // Cloudinary'de açılacak klasör adı
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"], // heic iPhone fotoğrafları için önemlidir
+  },
+});
+
+const upload = multer({ storage: storage });
+
 function requiredLogin(req, res, next) {
   if (!req.session.authenticated) {
     res.redirect("/landing");
@@ -69,6 +97,8 @@ function requiredLogin(req, res, next) {
     next();
   }
 }
+
+// ======================================
 
 // Set up session store
 app.use(
@@ -237,14 +267,110 @@ app.post("/signup", async (req, res) => {
 });
 
 // Render the profile page
-app.get("/profile", requiredLogin, (req, res) => {
-  res.render("profile.ejs", { name: req.session.username });
+//added more to it shivika for profile page
+app.get("/profile", requiredLogin, async (req, res) => {
+  try {
+    const user = await userCollection.findOne({ email: req.session.email });
+    res.render("profile.ejs", {
+      user,
+      name: req.session.username,
+      error: null,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
-//   Render the community page
-app.get("/community", requiredLogin, (req, res) => {
-  res.render("community.ejs", { name: req.session.username });
+//   Render the community page — fetch 5 random posts from MongoDB
+app.get("/community", requiredLogin, async (req, res) => {
+  try {
+    const posts = await postCollection
+      .aggregate([{ $sample: { size: 5 } }])
+      .toArray();
+    res.render("community.ejs", { name: req.session.username, posts: posts });
+  } catch (err) {
+    console.error("Error fetching community posts:", err);
+    res.render("community.ejs", { name: req.session.username, posts: [] });
+  }
 });
+
+// Handle profile
+//if everyhting wokring well should be able to save photo to mongo
+app.post(
+  "/profile",
+  requiredLogin,
+  upload.single("photo"),
+  async (req, res) => {
+    try {
+      const {
+        firstName,
+        lastName,
+        dateOfBirth,
+        occupation,
+        salary,
+        whyGardening,
+      } = req.body;
+
+      const updates = {
+        firstName,
+        lastName,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        occupation,
+        salary: salary ? Number(salary) : null,
+        whyGardening,
+      };
+
+      // If a photo was uploaded, convert buffer --> base64 and store it in mongo
+      if (req.file) {
+        const base64 = req.file.buffer.toString("base64");
+        const mimeType = req.file.mimetype; // e.g. "image/jpeg"
+        updates.photoUrl = `data:${mimeType};base64,${base64}`; // usable directly in <img src="">
+      }
+
+      await userCollection.updateOne(
+        { email: req.session.email }, // find the logged-in user
+        { $set: updates }, // update only the profile fields, leave email/password untouched
+      );
+
+      res.redirect("/profile");
+    } catch (err) {
+      console.error(err);
+      res.render("profile.ejs", {
+        user: null,
+        name: req.session.username,
+        error: err.message,
+      });
+    }
+  },
+);
+
+app.post(
+  "/community/upload",
+  requiredLogin,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const imageUrl = req.file.path;
+
+      const caption = req.body.caption;
+
+      const newPost = {
+        username: req.session.username,
+        imageUrl: imageUrl,
+        caption: caption,
+        createdAt: new Date(),
+      };
+
+      await postCollection.insertOne(newPost);
+
+      res.redirect("/community");
+    } catch (err) {
+      console.error("Error uploading post", err);
+      res.status(500).send("Error uploading post");
+    }
+  },
+);
 
 // Render the details page
 //Modified by: Steven Chi
