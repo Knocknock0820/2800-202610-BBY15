@@ -19,7 +19,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "seed:plants": "node public/js/seedPlants.js"
+    "seed:plants": "node public/js/seedPlants.js",
+    "add:species": "node scripts/addSpecies.js"
   },
   "repository": {
     "type": "git",
