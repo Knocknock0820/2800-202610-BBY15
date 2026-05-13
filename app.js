@@ -9,6 +9,9 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
 const fs = require("fs"); // Built-in Node.js File System module
 const path = require("path"); // Built-in Path module
@@ -38,6 +41,10 @@ const userCollection = database
 const plantCollection = database
   .db(mongodb_user_database)
   .collection("plant-types");
+
+const postCollection = database
+  .db(mongodb_user_database)
+  .collection("community-posts");
 
 /* Seed example plants types to database on startup (if database is empty)
   This function will be changed in the future,
@@ -79,6 +86,26 @@ var mongoStore = MongoStore.create({
   crypto: { secret: mongodb_session_secret },
 });
 
+// Adapted from Cloudinary Upload Tutorial: https://www.youtube.com/watch?v=2Z1oKtxleb4
+// Modified by: Harun Yaprak
+// ======================================
+// Set up Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "community_uploads", // Cloudinary'de açılacak klasör adı
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"], // heic iPhone fotoğrafları için önemlidir
+  },
+});
+
+const upload = multer({ storage: storage });
+
 function requiredLogin(req, res, next) {
   if (!req.session.authenticated) {
     res.redirect("/landing");
@@ -86,6 +113,8 @@ function requiredLogin(req, res, next) {
     next();
   }
 }
+
+// ======================================
 
 // Set up session store
 app.use(
@@ -99,9 +128,9 @@ app.use(
 
 // Render the main page
 app.get("/", requiredLogin, (req, res) => {
-  res.render("mainpage.ejs", { 
+  res.render("mainpage.ejs", {
     name: req.session.username,
-    firstLogin: req.query.firstLogin === 'true'
+    firstLogin: req.query.firstLogin === "true",
   });
 });
 
@@ -209,10 +238,45 @@ app.get("/profile", requiredLogin, (req, res) => {
   res.render("profile.ejs", { name: req.session.username });
 });
 
-//   Render the community page
-app.get("/community", requiredLogin, (req, res) => {
-  res.render("community.ejs", { name: req.session.username });
+//   Render the community page — fetch 5 random posts from MongoDB
+app.get("/community", requiredLogin, async (req, res) => {
+  try {
+    const posts = await postCollection
+      .aggregate([{ $sample: { size: 5 } }])
+      .toArray();
+    res.render("community.ejs", { name: req.session.username, posts: posts });
+  } catch (err) {
+    console.error("Error fetching community posts:", err);
+    res.render("community.ejs", { name: req.session.username, posts: [] });
+  }
 });
+
+app.post(
+  "/community/upload",
+  requiredLogin,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const imageUrl = req.file.path;
+
+      const caption = req.body.caption;
+
+      const newPost = {
+        username: req.session.username,
+        imageUrl: imageUrl,
+        caption: caption,
+        createdAt: new Date(),
+      };
+
+      await postCollection.insertOne(newPost);
+
+      res.redirect("/community");
+    } catch (err) {
+      console.error("Error uploading post", err);
+      res.status(500).send("Error uploading post");
+    }
+  },
+);
 
 // Render the details page
 app.get("/details/:species", requiredLogin, async (req, res) => {

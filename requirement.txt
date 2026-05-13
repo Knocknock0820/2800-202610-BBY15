@@ -5,3 +5,9 @@ npm install connect-mongo
 npm install bcrypt
 npm install joi
 npm install marked
+
+// These are the packages needed to run the community page.
+// If you are running this for the first time, you need to install these packages.
+npm install cloudinary
+npm install multer
+npm install multer-storage-cloudinary --legacy-peer-deps
