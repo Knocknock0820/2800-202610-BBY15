@@ -115,7 +115,6 @@ function createPlantCard(plant) {
       isWatered = true;
     }
   }
-
   wrapper.innerHTML = `
     <!-- Bootstrap Card -->
     <div class="card mb-3 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; background-color: #d5d3cc;">
@@ -146,7 +145,7 @@ function createPlantCard(plant) {
           
           <!-- Footer Buttons -->
           <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
-            <a href="/details/${plant.species}" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
+            <a href="/details/${plant.slug}" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
             <button class="btn btn-sm btn-delete border-0" data-id="${plant.id}" title="Remove plant" style="background: transparent; border: 1.5px solid rgba(25,53,12,0.2) !important; border-radius: 20px; padding: 4px 10px;">
               <img src="/icons/bin.png" alt="Delete" style="width: 16px; height: 16px; opacity: 0.6;" />
             </button>
@@ -282,6 +281,7 @@ function savePlant() {
   const newPlant = {
     id: Date.now(), // unique numeric id based on timestamp
     species: selectedType.name,
+    slug: selectedType.slug,
     nickname: nickname,
     waterFreq: selectedType.waterFreq,
     intervalDays: getIntervalDays(selectedType.waterFreq),
@@ -289,6 +289,7 @@ function savePlant() {
     lastWateredAt: null,
   };
 
+  console.log("Saving new plant:", newPlant);
   plants.push(newPlant);
   savePlants(plants);
 
