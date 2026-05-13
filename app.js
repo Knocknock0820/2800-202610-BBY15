@@ -51,8 +51,14 @@ const postCollection = database
 // Load plant files and seed on startup
 (async () => {
   try {
-    await loadPlantsWithFiles();
-    await seedPlants(plantCollection);
+    const existingPlants = await plantCollection.countDocuments();
+
+    if (existingPlants === 0) {
+      await loadPlantsWithFiles();
+      await seedPlants(plantCollection);
+    } else {
+      console.log("Plant types already exist, skipping initial seed.");
+    }
   } catch (err) {
     console.error("Error loading and seeding plants:", err);
   }
@@ -144,7 +150,14 @@ app.get("/api/plants/:slug/hero-image", requiredLogin, async (req, res) => {
       return res.status(404).json({ error: "Image not found" });
     }
 
-    // Convert base64 to buffer and serve with correct mime type
+    if (
+      typeof plant.heroImage === "string" &&
+      plant.heroImage.startsWith("http")
+    ) {
+      return res.redirect(plant.heroImage);
+    }
+
+    // Backward compatibility for older base64 records
     const buffer = Buffer.from(plant.heroImage, "base64");
     res.set("Content-Type", "image/jpeg");
     res.send(buffer);
@@ -170,8 +183,14 @@ app.get(
         return res.status(404).json({ error: "Image not found" });
       }
 
-      // Convert base64 to buffer and serve with correct mime type
-      const buffer = Buffer.from(plant.images[imageName], "base64");
+      const imageValue = plant.images[imageName];
+
+      if (typeof imageValue === "string" && imageValue.startsWith("http")) {
+        return res.redirect(imageValue);
+      }
+
+      // Backward compatibility for older base64 records
+      const buffer = Buffer.from(imageValue, "base64");
       res.set("Content-Type", "image/jpeg");
       res.send(buffer);
     } catch (err) {
@@ -380,6 +399,10 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
   function toDataUrl(base64String) {
     if (!base64String) {
       return null;
+    }
+
+    if (typeof base64String === "string" && base64String.startsWith("http")) {
+      return base64String;
     }
 
     return `data:image/jpeg;base64,${base64String}`;

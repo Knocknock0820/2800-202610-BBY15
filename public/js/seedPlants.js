@@ -2,18 +2,31 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
+const cloudinary = require("cloudinary").v2;
 
 const mongodb_user_database = process.env.MONGODB_USER_DATABASE;
 
 const { database } = require("../../config/MongoDB");
 
-// Helper function to read a file and encode as base64
-function readFileAsBase64(filePath) {
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper function to upload a local image file to Cloudinary
+async function uploadFileToCloudinary(filePath, publicId) {
   try {
-    const data = fs.readFileSync(filePath);
-    return data.toString("base64");
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "plant-types",
+      public_id: publicId,
+      overwrite: true,
+      resource_type: "image",
+    });
+
+    return result.secure_url;
   } catch (err) {
-    console.error(`Error reading file ${filePath}:`, err);
+    console.error(`Error uploading file ${filePath}:`, err.message || err);
     return null;
   }
 }
@@ -59,25 +72,31 @@ async function loadPlantsWithFiles() {
   const descriptionsPath = path.join(__dirname, "..", "descriptions");
 
   // Load Monstera hero image
-  defaultPlants[0].heroImage = readFileAsBase64(
+  defaultPlants[0].heroImage = await uploadFileToCloudinary(
     path.join(monsteraBasePath, "monstera.jpg"),
+    "monstera/monstera",
   );
 
   // Load Monstera lifecycle images
-  defaultPlants[0].images.monstera_seed = readFileAsBase64(
+  defaultPlants[0].images.monstera_seed = await uploadFileToCloudinary(
     path.join(monsteraBasePath, "monstera_seed.jpg"),
+    "monstera/monstera_seed",
   );
-  defaultPlants[0].images.monstera_sprout = readFileAsBase64(
+  defaultPlants[0].images.monstera_sprout = await uploadFileToCloudinary(
     path.join(monsteraBasePath, "monstera_sprout.jpg"),
+    "monstera/monstera_sprout",
   );
-  defaultPlants[0].images.monstera_mature = readFileAsBase64(
+  defaultPlants[0].images.monstera_mature = await uploadFileToCloudinary(
     path.join(monsteraBasePath, "monstera_mature.jpg"),
+    "monstera/monstera_mature",
   );
-  defaultPlants[0].images.monstera_flower = readFileAsBase64(
+  defaultPlants[0].images.monstera_flower = await uploadFileToCloudinary(
     path.join(monsteraBasePath, "monstera_flower.jpg"),
+    "monstera/monstera_flower",
   );
-  defaultPlants[0].images.monstera_harvest = readFileAsBase64(
+  defaultPlants[0].images.monstera_harvest = await uploadFileToCloudinary(
     path.join(monsteraBasePath, "monstera_harvest.jpg"),
+    "monstera/monstera_harvest",
   );
 
   // Load Monstera description markdown

@@ -18,17 +18,31 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
+const cloudinary = require("cloudinary").v2;
 
 const mongodb_user_database = process.env.MONGODB_USER_DATABASE;
 
 const { database } = require("../config/MongoDB");
 
-// Helper function to read a file and encode as base64
-function readFileAsBase64(filePath) {
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper function to upload a local image file to Cloudinary
+async function uploadFileToCloudinary(filePath, publicId) {
   try {
-    const data = fs.readFileSync(filePath);
-    return data.toString("base64");
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "plant-types",
+      public_id: publicId,
+      overwrite: true,
+      resource_type: "image",
+    });
+
+    return result.secure_url;
   } catch (err) {
+    console.error(`Error uploading file ${filePath}:`, err.message || err);
     return null;
   }
 }
@@ -48,11 +62,11 @@ function fileExists(filePath) {
 }
 
 // Discover all lifecycle images for a plant based on slug
-function discoverLifecycleImages(imagesPath, slug) {
+async function discoverLifecycleImages(imagesPath, slug) {
   const stages = ["seed", "sprout", "mature", "flower", "harvest"];
   const images = {};
 
-  stages.forEach((stage) => {
+  for (const stage of stages) {
     const imageName = `${slug}_${stage}`;
     let imagePath = path.join(imagesPath, `${imageName}.jpg`);
 
@@ -61,17 +75,20 @@ function discoverLifecycleImages(imagesPath, slug) {
     }
 
     if (fileExists(imagePath)) {
-      images[imageName] = readFileAsBase64(imagePath);
+      images[imageName] = await uploadFileToCloudinary(
+        imagePath,
+        `${slug}/${imageName}`,
+      );
     } else {
       console.warn(`⚠️  Missing lifecycle image: ${imageName}.jpg/png`);
     }
-  });
+  }
 
   return images;
 }
 
 // Discover hero image for a plant based on slug
-function discoverHeroImage(imagesPath, slug) {
+async function discoverHeroImage(imagesPath, slug) {
   let heroPath = path.join(imagesPath, `${slug}.jpg`);
 
   if (!fileExists(heroPath)) {
@@ -79,7 +96,7 @@ function discoverHeroImage(imagesPath, slug) {
   }
 
   if (fileExists(heroPath)) {
-    return readFileAsBase64(heroPath);
+    return uploadFileToCloudinary(heroPath, `${slug}/${slug}`);
   }
 
   console.warn(`⚠️  Missing hero image: ${slug}.jpg/png`);
@@ -99,7 +116,7 @@ function discoverDescription(descriptionsPath, slug) {
 }
 
 // Create plant object from discovered files
-function createPlantFromFiles(name, slug, waterFreq, difficulty) {
+async function createPlantFromFiles(name, slug, waterFreq, difficulty) {
   const imagesPath = path.join(__dirname, "..", "public", "images");
   const descriptionsPath = path.join(__dirname, "..", "public", "descriptions");
 
@@ -108,8 +125,8 @@ function createPlantFromFiles(name, slug, waterFreq, difficulty) {
     slug,
     waterFreq,
     difficulty: difficulty || "Unknown",
-    heroImage: discoverHeroImage(imagesPath, slug),
-    images: discoverLifecycleImages(imagesPath, slug),
+    heroImage: await discoverHeroImage(imagesPath, slug),
+    images: await discoverLifecycleImages(imagesPath, slug),
     description: discoverDescription(descriptionsPath, slug),
   };
 
@@ -169,7 +186,7 @@ async function main() {
       .db(mongodb_user_database)
       .collection("plant-types");
 
-    const plant = createPlantFromFiles(name, slug, waterFreq, difficulty);
+    const plant = await createPlantFromFiles(name, slug, waterFreq, difficulty);
 
     // Validate that at least the hero image exists
     if (!plant.heroImage) {
