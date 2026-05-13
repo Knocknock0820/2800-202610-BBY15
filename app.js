@@ -12,6 +12,7 @@ const Joi = require("joi");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
+const upload = require("./middleware/upload"); //shivika added hehe
 
 const fs = require("fs"); // Built-in Node.js File System module
 const path = require("path"); // Built-in Path module
@@ -233,9 +234,16 @@ app.post("/signup", async (req, res) => {
   res.redirect("/?firstLogin=true");
 });
 
-// Render the profile page
-app.get("/profile", requiredLogin, (req, res) => {
-  res.render("profile.ejs", { name: req.session.username });
+// Render the profile page 
+//added more to it shivika for profile page
+app.get("/profile", requiredLogin, async (req, res) => {
+  try {
+    const user = await userCollection.findOne({ email: req.session.email });
+    res.render("profile.ejs", { user, name: req.session.username, error: null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
 //   Render the community page — fetch 5 random posts from MongoDB
@@ -249,6 +257,46 @@ app.get("/community", requiredLogin, async (req, res) => {
     console.error("Error fetching community posts:", err);
     res.render("community.ejs", { name: req.session.username, posts: [] });
   }
+// Handle profile
+//if everyhting wokring well should be able to save photo to mongo
+app.post("/profile", requiredLogin, upload.single("photo"), async (req, res) => {
+  try {
+    const { firstName, lastName, dateOfBirth, occupation, salary, whyGardening } = req.body;
+ 
+    const updates = {
+      firstName,
+      lastName,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      occupation,
+      salary:       salary ? Number(salary) : null,
+      whyGardening,
+    };
+ 
+    // If a photo was uploaded, convert buffer --> base64 and store it in mongo
+    if (req.file) {
+      const base64   = req.file.buffer.toString("base64");
+      const mimeType = req.file.mimetype;                      // e.g. "image/jpeg"
+      updates.photoUrl = `data:${mimeType};base64,${base64}`; // usable directly in <img src="">
+    }
+ 
+    await userCollection.updateOne(
+      { email: req.session.email }, // find the logged-in user
+      { $set: updates }             // update only the profile fields, leave email/password untouched
+    );
+ 
+    res.redirect("/profile");
+  } catch (err) {
+    console.error(err);
+    res.render("profile.ejs", { user: null, name: req.session.username, error: err.message });
+  }
+});
+ 
+
+
+
+//   Render the community page
+app.get("/community", requiredLogin, (req, res) => {
+  res.render("community.ejs", { name: req.session.username });
 });
 
 app.post(
