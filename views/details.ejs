@@ -130,6 +130,41 @@
       }
     </script>
 
+    <script>
+      // Preload hero and lifecycle images so switching stages is instant.
+      document.addEventListener('DOMContentLoaded', () => {
+        try {
+          const lifecycleJsonEl = document.getElementById('lifecycle-images-data');
+          const lifecycleData = lifecycleJsonEl ? JSON.parse(lifecycleJsonEl.textContent || '{}') : {};
+
+          // Preload hero image
+          const heroEl = document.getElementById('plantImage');
+          if (heroEl && heroEl.src) {
+            const heroPre = new Image();
+            heroPre.src = heroEl.src;
+          }
+
+          // Ensure the displayed lifecycle image knows its current src
+          const displayImg = document.getElementById('lifecycleDisplay');
+          if (displayImg) {
+            const initialKey = '<%= slug %>_seed';
+            displayImg.dataset.currentSrc = lifecycleData[initialKey] || displayImg.src;
+          }
+
+          // Preload all lifecycle images (Cloudinary URLs or data URLs)
+          Object.values(lifecycleData).forEach((url) => {
+            if (url) {
+              const img = new Image();
+              img.src = url;
+            }
+          });
+        } catch (e) {
+          // Silent fail — preloading is a perf optimization only
+          console.warn('Preload error', e);
+        }
+      });
+    </script>
+
     <%- include('partials/footer', { showBottomNav: true, activeTab: '' }) %>
 </body>
 
