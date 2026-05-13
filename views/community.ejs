@@ -1,11 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Community</title>
-  </head>
-  <body>
-    <h1>Hello community</h1>
-  </body>
+
+<head>
+  <%- include('partials/head', {title: 'Community - 🌱 Sprout', pageCSS: '/css/community.css'}) %>
+</head>
+
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <%- include('partials/navbar', {showLogout: true, activeLink: 'community'}) %>
+
+  <!-- ===== HERO / JUMBOTRON ===== -->
+  <!-- code adopted from Bootstrap Album example: https://getbootstrap.com/docs/5.3/examples/album/
+       Modified by: Harun Yaprak — adapted hero + card grid to single-column mobile layout with Sprout theme -->
+  <section class="community-hero py-4 text-center">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-6 col-md-8 mx-auto">
+          <h1 class="community-title fw-light">🌿 Community Garden</h1>
+          <p class="lead community-subtitle">
+            Share your plant journey, swap care tips, and celebrate every bloom with fellow Sprout growers.
+          </p>
+          <p>
+            <button class="btn btn-sprout-primary my-2" id="btnNewPost" data-bs-toggle="modal" data-bs-target="#newPostModal">
+              ✏️ Share a Post
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ALBUM / CARD GRID ===== -->
+  <div class="album py-4">
+    <div class="container">
+      <!-- row-cols-1 = always single column on mobile -->
+      <div class="row row-cols-1 g-3" id="communityPosts">
+
+        <% if (posts && posts.length > 0) { %>
+          <% posts.forEach(function(post) { %>
+            <!-- Dynamic Post Card from Database -->
+            <div class="col">
+              <div class="card community-card shadow-sm">
+                <% if (post.imageUrl) { %>
+                  <img src="<%= post.imageUrl %>" class="card-img-top" alt="Community post photo" />
+                <% } %>
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="post-avatar me-2">🌱</div>
+                    <div>
+                      <strong class="post-author"><%= post.username %></strong>
+                      <small class="text-muted d-block">
+                        <%
+                          // Calculate relative time
+                          const now = new Date();
+                          const posted = new Date(post.createdAt);
+                          const diffMs = now - posted;
+                          const diffMins = Math.floor(diffMs / 60000);
+                          const diffHours = Math.floor(diffMs / 3600000);
+                          const diffDays = Math.floor(diffMs / 86400000);
+                          let timeAgo;
+                          if (diffMins < 1) timeAgo = 'Just now';
+                          else if (diffMins < 60) timeAgo = diffMins + ' min ago';
+                          else if (diffHours < 24) timeAgo = diffHours + (diffHours === 1 ? ' hour ago' : ' hours ago');
+                          else if (diffDays < 7) timeAgo = diffDays + (diffDays === 1 ? ' day ago' : ' days ago');
+                          else timeAgo = posted.toLocaleDateString();
+                        %>
+                        <%= timeAgo %>
+                      </small>
+                    </div>
+                  </div>
+                  <% if (post.caption) { %>
+                    <p class="card-text"><%= post.caption %></p>
+                  <% } %>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="btn-group">
+                      <button type="button" class="btn btn-sm btn-outline-sprout">❤️</button>
+                    </div>
+                    <small class="text-body-secondary">Community</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <!-- Empty state when no posts exist yet -->
+          <div class="col">
+            <div class="text-center py-5">
+              <div style="font-size: 3rem;">🌱</div>
+              <h5 class="mt-3" style="color: #19350c; font-family: 'Playfair Display', serif;">No posts yet!</h5>
+              <p class="text-muted">Be the first to share something with the community.</p>
+            </div>
+          </div>
+        <% } %>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NEW POST MODAL ===== -->
+  <!-- code adopted from Bootstrap: https://getbootstrap.com/docs/5.3/components/modal/
+       Modified by: Harun Yaprak -->
+  <div class="modal fade" id="newPostModal" tabindex="-1" aria-labelledby="newPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #f2f1ee; border-radius: 24px;">
+        <!-- Wrap in a proper form for multipart file upload to Cloudinary -->
+        <form action="/community/upload" method="POST" enctype="multipart/form-data" id="newPostForm">
+          <div class="modal-header border-0 pb-0 mt-2">
+            <h5 class="modal-title fw-bold mx-auto" id="newPostModalLabel"
+              style="color: #19350c; font-family: 'Playfair Display', serif; font-size: 1.3rem;">Share with the Community</h5>
+            <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal"
+              aria-label="Close"></button>
+          </div>
+          <div class="modal-body px-4 pt-3">
+            <div class="mb-3">
+              <label for="postCaption" class="form-label fw-bold small mb-1"
+                style="color: #687d31; text-transform: uppercase; letter-spacing: 0.05em;">What's growing?</label>
+              <textarea class="form-control" id="postCaption" name="caption" rows="4"
+                placeholder="Share your plant update, tip, or question…"
+                style="border-radius: 12px; padding: 12px 14px; border: 1.5px solid #d5d3cc; box-shadow: none; resize: none;"
+                required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="postImage" class="form-label fw-bold small mb-1"
+                style="color: #687d31; text-transform: uppercase; letter-spacing: 0.05em;">Add a photo</label>
+              <input type="file" class="form-control" id="postImage" name="image"
+                accept="image/jpeg,image/png,image/webp,image/heic"
+                style="border-radius: 12px; border: 1.5px solid #d5d3cc; box-shadow: none;" required />
+              <!-- Image preview -->
+              <div id="imagePreview" class="mt-2" style="display: none;">
+                <img id="previewImg" src="" alt="Preview"
+                  style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1.5px solid #d5d3cc;" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0 px-4 pb-4 d-flex gap-2">
+            <button type="button" class="btn flex-fill" data-bs-dismiss="modal"
+              style="border: 1.5px solid #d5d3cc; border-radius: 12px; color: #687d31; font-weight: 600; padding: 12px;">Cancel</button>
+            <button type="submit" class="btn flex-fill" id="btnSubmitPost"
+              style="background-color: #687d31; color: #d5d3cc; border-radius: 12px; font-weight: 600; padding: 12px; border: none;">Post 🌱</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM NAVIGATION BAR ===== -->
+  <%- include('partials/footer', { showBottomNav: true, activeTab: 'community', showCopyright: true }) %>
+
+  <!-- Community page JS -->
+  <script src="/js/community.js"></script>
+</body>
+
 </html>
