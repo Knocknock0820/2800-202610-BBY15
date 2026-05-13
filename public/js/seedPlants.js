@@ -45,9 +45,10 @@ const defaultPlants = [
   {
     name: "Monstera",
     slug: "monstera",
-    waterFreq: "Every week",
+    waterFreq: 7, // days between watering
+    temp: 28, // comfortable max temp in °C
     difficulty: "Easy",
-    heroImage: null, // Will be populated with base64 data
+    heroImage: null,
     images: {
       monstera_seed: null,
       monstera_sprout: null,
@@ -55,15 +56,15 @@ const defaultPlants = [
       monstera_flower: null,
       monstera_harvest: null,
     },
-    description: null, // Will be populated with markdown file content
+    description: null,
   },
-  { name: "Snake Plant", slug: "snake_plant", waterFreq: "Once a month" },
-  { name: "Cactus", slug: "cactus", waterFreq: "Every 2 weeks" },
-  { name: "Peace Lily", slug: "peace_lily", waterFreq: "Every 3 days" },
-  { name: "Spider Plant", slug: "spider_plant", waterFreq: "Every week" },
-  { name: "Pothos", slug: "pothos", waterFreq: "Every 1-2 weeks" },
-  { name: "Aloe Vera", slug: "aloe_vera", waterFreq: "Every 2-3 weeks" },
-  { name: "Rubber Tree", slug: "rubber_tree", waterFreq: "Every 2 weeks" },
+  { name: "Snake Plant", slug: "snake_plant", waterFreq: 30, temp: 35 },
+  { name: "Cactus", slug: "cactus", waterFreq: 14, temp: 40 },
+  { name: "Peace Lily", slug: "peace_lily", waterFreq: 3, temp: 30 },
+  { name: "Spider Plant", slug: "spider_plant", waterFreq: 7, temp: 32 },
+  { name: "Pothos", slug: "pothos", waterFreq: 10, temp: 32 },
+  { name: "Aloe Vera", slug: "aloe_vera", waterFreq: 21, temp: 35 },
+  { name: "Rubber Tree", slug: "rubber_tree", waterFreq: 14, temp: 32 },
 ];
 
 // Load plant data from files

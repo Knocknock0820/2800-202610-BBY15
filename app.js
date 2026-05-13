@@ -130,7 +130,7 @@ app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await plantCollection
       .find({})
-      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1 })
+      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1 })
       .toArray();
     res.json(plants);
   } catch (err) {
@@ -437,6 +437,9 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
           )
         : {},
       descriptionHtml: descriptionHtml,
+      // New fields for template display
+      waterFreq: typeof plant.waterFreq === "number" ? plant.waterFreq : null,
+      temp: typeof plant.temp === "number" ? plant.temp : null,
     });
   } catch (err) {
     console.error("Error fetching plant details:", err);

@@ -275,16 +275,13 @@ function getIntervalDays(freqStr) {
 // After we implement plant database, we can remove this function and just get the data from the database
 // Currently used to get max temperature tolerance for a plant species
 function getPlantMaxTemp(species) {
-  const temps = {
-    Monstera: 10,
-    "Snake Plant": 35,
-    Cactus: 40,
-    "Peace Lily": 28,
-    "Spider Plant": 32,
-    Pothos: 32,
-    "Aloe Vera": 35,
-  };
-  return temps[species] || 30; // default 30°C if not specified
+  if (!availablePlantTypes || !availablePlantTypes.length) return 30;
+  // Try to find by name or slug
+  const found = availablePlantTypes.find(
+    (p) => p.name === species || p.slug === species,
+  );
+  if (found && typeof found.temp === "number") return found.temp;
+  return 30; // sensible default
 }
 
 // Update temperature alerts for all rendered cards dynamically
@@ -398,7 +395,10 @@ function savePlant() {
     slug: selectedType.slug,
     nickname: nickname,
     waterFreq: selectedType.waterFreq,
-    intervalDays: getIntervalDays(selectedType.waterFreq),
+    intervalDays:
+      typeof selectedType.waterFreq === "number"
+        ? selectedType.waterFreq
+        : getIntervalDays(selectedType.waterFreq),
     addedAt: new Date().toISOString(),
     lastWateredAt: null,
   };

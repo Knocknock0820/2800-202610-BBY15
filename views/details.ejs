@@ -35,13 +35,21 @@
       <div class="mb-4 px-2">
         <div class="d-flex align-items-center mb-3">
           <img src="/icons/sun.png" alt="Sunlight" width="28" height="28" class="care-icon icon-sun">
-          <span class="ms-3 icon-text" style="color: #dc3545;">6-8 hrs</span>
+          <span class="ms-3 icon-text" style="color: #dc3545;">
+            <%= typeof temp==='number' ? (temp + '°C' ) : '—' %>
+          </span>
         </div>
         <!-- <a href="https://www.flaticon.com/free-icons/sun" title="sun icons">Sun icons created by Good Ware - Flaticon</a> -->
 
         <div class="d-flex align-items-center">
           <img src="/icons/h2o.png" alt="Water" width="28" height="28" class="care-icon icon-water">
-          <span class="ms-3 icon-text" style="color: #0d6efd;">full pour / 2 day</span>
+          <span class="ms-3 icon-text" style="color: #0d6efd;">
+            <% if (typeof waterFreq==='number' ) { %>
+              Water every <%= waterFreq %> day<%= waterFreq> 1 ? 's' : '' %>
+                  <% } else { %>
+                    Water schedule: N/A
+                    <% } %>
+          </span>
         </div>
       </div>
       <!-- <a href="https://www.flaticon.com/free-icons/water" title="water icons">Water icons created by Freepik - Flaticon</a> -->
