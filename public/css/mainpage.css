@@ -340,6 +340,10 @@ body {
 }
 
 .btn-edit-card:hover img {
+  opacity: 0.8;
+}
+
+.btn-edit-card img {
   width: 14px;
   height: 14px;
   opacity: 0.5;
