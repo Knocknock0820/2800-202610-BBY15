@@ -207,7 +207,7 @@ function createPlantCard(plant) {
           ${nicknameHTML}
           <p class="card-date">Added ${addedDate}</p>
           <div class="card-actions">
-            <a href="/details/${plant.slug}" class="btn-details">Details →</a>
+            <a href="/details/${plant.slug || (plant.species || plant.name || '').toLowerCase().replace(/\s+/g, '_')}" class="btn-details">Details →</a>
             <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
               <img src="/icons/bin.png" alt="Delete" />
             </button>

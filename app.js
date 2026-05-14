@@ -54,10 +54,24 @@ const postCollection = database
     const existingPlants = await plantCollection.countDocuments();
 
     if (existingPlants === 0) {
+      // Fresh database — seed everything
       await loadPlantsWithFiles();
       await seedPlants(plantCollection);
     } else {
-      console.log("Plant types already exist, skipping initial seed.");
+      // Check if existing plants have the new 'slug' field
+      const hasSlug = await plantCollection.findOne({ slug: { $exists: true } });
+      if (!hasSlug) {
+        // Old format plants without slugs — drop and re-seed
+        console.log("Old plant format detected (no slugs). Re-seeding...");
+        await plantCollection.deleteMany({});
+        await loadPlantsWithFiles();
+        await seedPlants(plantCollection);
+      } else {
+        // Also upsert to pick up any new species added to seedPlants
+        await loadPlantsWithFiles();
+        await seedPlants(plantCollection);
+        console.log("Plant types synced.");
+      }
     }
   } catch (err) {
     console.error("Error loading and seeding plants:", err);
