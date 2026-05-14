@@ -54,10 +54,24 @@ const postCollection = database
     const existingPlants = await plantCollection.countDocuments();
 
     if (existingPlants === 0) {
+      // Fresh database — seed everything
       await loadPlantsWithFiles();
       await seedPlants(plantCollection);
     } else {
-      console.log("Plant types already exist, skipping initial seed.");
+      // Check if existing plants have the new 'slug' field
+      const hasSlug = await plantCollection.findOne({ slug: { $exists: true } });
+      if (!hasSlug) {
+        // Old format plants without slugs — drop and re-seed
+        console.log("Old plant format detected (no slugs). Re-seeding...");
+        await plantCollection.deleteMany({});
+        await loadPlantsWithFiles();
+        await seedPlants(plantCollection);
+      } else {
+        // Also upsert to pick up any new species added to seedPlants
+        await loadPlantsWithFiles();
+        await seedPlants(plantCollection);
+        console.log("Plant types synced.");
+      }
     }
   } catch (err) {
     console.error("Error loading and seeding plants:", err);
@@ -94,7 +108,17 @@ const storage = new CloudinaryStorage({
   },
 });
 
+// Separate storage config for plant images
+const plantImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "plant_images",
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"],
+  },
+});
+
 const upload = multer({ storage: storage });
+const plantImageUpload = multer({ storage: plantImageStorage });
 
 function requiredLogin(req, res, next) {
   if (!req.session.authenticated) {
@@ -386,6 +410,26 @@ app.post(
     } catch (err) {
       console.error("Error uploading post", err);
       res.status(500).send("Error uploading post");
+    }
+  },
+);
+
+// Upload plant image to Cloudinary
+// Modified by: Harun Yaprak
+app.post(
+  "/api/plants/upload-image",
+  requiredLogin,
+  plantImageUpload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+      const imageUrl = req.file.path;
+      res.json({ imageUrl: imageUrl });
+    } catch (err) {
+      console.error("Error uploading plant image:", err);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   },
 );
