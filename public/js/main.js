@@ -90,18 +90,28 @@ function savePlants(plants) {
 
 /* -------------------------------------------------------
    3. PLANT CARD RENDERING
-   Build a card DOM element for a single plant object
-   and attach the expand/collapse toggle to it.
+   Build a premium card DOM element for a single plant
+   with horizontal layout, notification badges, and
+   expandable checklist.
 ------------------------------------------------------- */
-// Code adopted from bootstrap : https://getbootstrap.com/docs/5.3/components/card/
+// Card design inspired by Bootstrap Blog template: https://getbootstrap.com/docs/5.3/examples/blog/
 // Modified by: Harun Yaprak
+
+// Get default image for a species (fallback if user hasn't uploaded)
+function getDefaultPlantImage(species) {
+  if (!species) return "/images/error.png";
+  const name = species.toLowerCase().replace(/\s+/g, "_");
+  return `/images/${name}.jpg`;
+}
+
 // Create and return a .plant-card element for the given plant
 function createPlantCard(plant) {
   const wrapper = document.createElement("div");
 
   const displayName = plant.nickname
-    ? `${plant.nickname} (${plant.species})`
+    ? plant.nickname
     : plant.species || plant.name;
+  const speciesName = plant.species || plant.name;
   const addedDate = plant.addedAt
     ? new Date(plant.addedAt).toLocaleDateString("en-US", {
         year: "numeric",
@@ -110,6 +120,7 @@ function createPlantCard(plant) {
       })
     : "Unknown date";
 
+  // Determine watering state
   const now = Date.now();
   let isWatered = false;
   if (plant.lastWateredAt) {
@@ -120,6 +131,7 @@ function createPlantCard(plant) {
     }
   }
 
+  // Determine shade state
   let isInShade = false;
   if (plant.movedToShadeAt) {
     const shadeTime = new Date(plant.movedToShadeAt).getTime();
@@ -130,56 +142,90 @@ function createPlantCard(plant) {
 
   const maxTemp = getPlantMaxTemp(plant.species);
   const isTooHot = (typeof window.currentTemperature !== 'undefined') && (window.currentTemperature > maxTemp);
-  const showSunIcon = isTooHot && !isInShade;
+  const showSunAlert = isTooHot && !isInShade;
+
+  // Use user-uploaded image or default
+  const plantImageUrl = plant.imageUrl || getDefaultPlantImage(plant.species);
+
+  // Build badge HTML
+  const waterBadgeClass = isWatered ? "badge-notify badge-water resolved" : "badge-notify badge-water";
+  const waterBadgeText = isWatered ? "✓ Watered" : "💧 Needs Water";
+  const waterBadgeHTML = `<span class="${waterBadgeClass}" id="water-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">${waterBadgeText}</span>`;
+
+  let sunBadgeHTML = "";
+  if (showSunAlert) {
+    sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">☀️ Too Hot!</span>`;
+  } else if (isInShade) {
+    sunBadgeHTML = `<span class="badge-notify badge-sun resolved" id="sun-badge-${plant.id}" data-plant-id="${plant.id}">✓ In Shade</span>`;
+  } else {
+    sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist" style="display: none;">☀️ Too Hot!</span>`;
+  }
+
+  // Nickname display
+  const nicknameHTML = plant.nickname
+    ? `<p class="card-nickname">"${plant.nickname}"</p>`
+    : "";
+
+  // Format water frequency if it's just a number
+  let displayFreq = plant.waterFreq || "Weekly";
+  if (!isNaN(displayFreq) && displayFreq.toString().trim() !== "") {
+    displayFreq = displayFreq == 1 ? "Every day" : `Every ${displayFreq} days`;
+  }
 
   wrapper.innerHTML = `
-    <!-- Bootstrap Card -->
-    <div class="card mb-3 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; background-color: #d5d3cc;">
-      <!-- Card Header (Clickable for Bootstrap Collapse) -->
-      <div class="card-header fw-bold d-flex justify-content-between align-items-center" 
-           data-bs-toggle="collapse" 
-           href="#collapsePlant${plant.id}" 
-           role="button" aria-expanded="false" 
-           style="cursor: pointer; padding: 16px 24px; color: #19350c; background-color: transparent; border-bottom: none;">
-        <span>${displayName}</span>
-        <div class="d-flex align-items-center gap-2">
-          <img src="/icons/sun.png" id="temp-alert-${plant.id}" alt="Too Hot" style="width: 20px; height: 20px; ${showSunIcon ? '' : 'display: none;'} filter: invert(56%) sepia(85%) saturate(3015%) hue-rotate(1deg) brightness(103%) contrast(105%);" title="Too Hot!">
-          <img src="/icons/h2o.png" id="water-alert-${plant.id}" alt="Needs Water" style="width: 20px; height: 20px; ${isWatered ? 'display: none;' : ''} filter: invert(37%) sepia(87%) saturate(1637%) hue-rotate(194deg) brightness(101%) contrast(101%);" title="Needs Water">
-          <small class="text-muted" style="font-size: 0.7em;">▼</small>
+    <div class="plant-card" data-plant-id="${plant.id}">
+      <!-- Notification Badges -->
+      <div class="card-badges">
+        ${waterBadgeHTML}
+        ${sunBadgeHTML}
+      </div>
+
+      <!-- Card Body: Horizontal Layout -->
+      <div class="card-body-row">
+        <!-- Plant Image -->
+        <div class="plant-img-wrapper" id="img-wrapper-${plant.id}">
+          <img src="${plantImageUrl}" alt="${speciesName}" 
+               onerror="if(this.src.includes('.jpg')){this.src=this.src.replace('.jpg','.png')}else if(!this.src.includes('error.png')){this.src='/images/error.png'}" />
+          <div class="img-upload-overlay" title="Upload photo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" 
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <input type="file" class="card-image-input" accept="image/jpeg,image/png,image/webp,image/heic" 
+            style="display:none;" data-plant-id="${plant.id}" />
+        </div>
+
+        <!-- Card Info -->
+        <div class="card-info">
+          <h3 class="card-species">${speciesName}</h3>
+          ${nicknameHTML}
+          <p class="card-date">Added ${addedDate}</p>
+          <div class="card-actions">
+            <a href="/details/${plant.species}" class="btn-details">Details →</a>
+            <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
+              <img src="/icons/bin.png" alt="Delete" />
+            </button>
+          </div>
         </div>
       </div>
-      
-      <!-- Collapsible Body -->
-      <div class="collapse" id="collapsePlant${plant.id}">
-        <div class="card-body" style="background-color: #e8e6e0; padding: 16px 24px;">
-          <p class="small mb-3" style="color: #687d31; font-weight: 500; font-style: italic;">Added on ${addedDate}</p>
-          
+
+      <!-- Expandable Checklist Panel -->
+      <div class="checklist-panel" id="checklist-${plant.id}">
+        <div class="checklist-inner">
           <!-- Watering Checklist -->
-          <div class="form-check mb-3 p-3" style="background-color: #f2f1ee; border-radius: 12px; margin-left: 0; padding-left: 12px;">
-            <div class="d-flex align-items-center gap-2">
-              <input class="form-check-input water-checkbox m-0" type="checkbox" id="check${plant.id}" ${isWatered ? "checked" : ""} style="width: 18px; height: 18px; accent-color: #687d31;">
-              <label class="form-check-label" for="check${plant.id}" style="color: #19350c; font-size: 0.9rem;">
-                Watering Schedule: ${plant.waterFreq}
-              </label>
-            </div>
+          <div class="checklist-item">
+            <input type="checkbox" class="water-checkbox" id="check-water-${plant.id}" ${isWatered ? "checked" : ""} />
+            <label for="check-water-${plant.id}">Water this plant</label>
+            <span class="freq-tag">${displayFreq}</span>
           </div>
           
-          <!-- Move Plant To Shade Checklist -->
-          <div class="form-check mb-3 p-3 shade-container" id="shade-container-${plant.id}" style="background-color: #f2f1ee; border-radius: 12px; margin-left: 0; padding-left: 12px; ${(isTooHot || isInShade) ? 'display: block;' : 'display: none;'}">
-            <div class="d-flex align-items-center gap-2">
-              <input class="form-check-input shade-checkbox m-0" type="checkbox" id="shade${plant.id}" ${isInShade ? "checked" : ""} style="width: 18px; height: 18px; accent-color: #687d31;">
-              <label class="form-check-label" for="shade${plant.id}" style="color: #19350c; font-size: 0.9rem;">
-                Move Plant To Shade
-              </label>
-            </div>
-          </div>
-          
-          <!-- Footer Buttons -->
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
-            <a href="/details/${plant.species}" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
-            <button class="btn btn-sm btn-delete border-0" data-id="${plant.id}" title="Remove plant" style="background: transparent; border: 1.5px solid rgba(25,53,12,0.2) !important; border-radius: 20px; padding: 4px 10px;">
-              <img src="/icons/bin.png" alt="Delete" style="width: 16px; height: 16px; opacity: 0.6;" />
-            </button>
+          <!-- Move to Shade Checklist (conditional) -->
+          <div class="checklist-item shade-item" id="shade-item-${plant.id}" style="${(isTooHot || isInShade) ? '' : 'display: none;'}">
+            <input type="checkbox" class="shade-checkbox" id="check-shade-${plant.id}" ${isInShade ? "checked" : ""} />
+            <label for="check-shade-${plant.id}">Move to shade</label>
+            <span class="freq-tag">8hr cooldown</span>
           </div>
         </div>
       </div>
@@ -188,36 +234,102 @@ function createPlantCard(plant) {
 
   const card = wrapper.firstElementChild;
 
-  // Attach listener to checkbox to save watering state
-  const checkbox = card.querySelector(".water-checkbox");
-  if (checkbox) {
-    checkbox.addEventListener("change", (e) => {
-      updatePlantWateredState(plant.id, e.target.checked);
-      const alertIcon = card.querySelector(`#water-alert-${plant.id}`);
-      if (alertIcon) {
-        alertIcon.style.display = e.target.checked ? "none" : "block";
+  // --- Event: Card click toggles checklist ---
+  card.addEventListener("click", (e) => {
+    // Ignore clicks on interactive elements
+    if (e.target.closest("button, a, input, label, .img-upload-overlay")) return;
+    
+    const checklist = card.querySelector(".checklist-panel");
+    if (checklist) {
+      checklist.classList.toggle("open");
+    }
+  });
+
+  // --- Event: Image upload overlay click ---
+  const imgOverlay = card.querySelector(".img-upload-overlay");
+  const imgInput = card.querySelector(".card-image-input");
+  if (imgOverlay && imgInput) {
+    imgOverlay.addEventListener("click", (e) => {
+      e.stopPropagation();
+      imgInput.click();
+    });
+
+    imgInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const res = await fetch("/api/plants/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+
+        // Save imageUrl to localStorage
+        const plants = loadPlants();
+        const idx = plants.findIndex(p => p.id === plant.id);
+        if (idx !== -1) {
+          plants[idx].imageUrl = data.imageUrl;
+          savePlants(plants);
+        }
+
+        // Update image in DOM immediately
+        const img = card.querySelector(".plant-img-wrapper img");
+        if (img) img.src = data.imageUrl;
+      } catch (err) {
+        console.error("Image upload error:", err);
+        alert("Failed to upload image. Please try again.");
       }
     });
   }
 
-  // Attach listener to shade checkbox
+  // --- Event: Watering checkbox ---
+  const waterCheckbox = card.querySelector(".water-checkbox");
+  if (waterCheckbox) {
+    waterCheckbox.addEventListener("change", (e) => {
+      updatePlantWateredState(plant.id, e.target.checked);
+      const badge = card.querySelector(`#water-badge-${plant.id}`);
+      if (badge) {
+        if (e.target.checked) {
+          badge.classList.add("resolved");
+          badge.textContent = "✓ Watered";
+        } else {
+          badge.classList.remove("resolved");
+          badge.textContent = "💧 Needs Water";
+        }
+      }
+    });
+  }
+
+  // --- Event: Shade checkbox ---
   // Adopted from AI
   // Modified by: Harun Yaprak
   const shadeCheckbox = card.querySelector(".shade-checkbox");
   if (shadeCheckbox) {
     shadeCheckbox.addEventListener("change", (e) => {
       updatePlantShadeState(plant.id, e.target.checked);
-      const alertIcon = card.querySelector(`#temp-alert-${plant.id}`);
-      if (alertIcon) {
+      const badge = card.querySelector(`#sun-badge-${plant.id}`);
+      if (badge) {
         const maxTemp = getPlantMaxTemp(plant.species);
         const isCurrentlyHot = (typeof window.currentTemperature !== 'undefined') && (window.currentTemperature > maxTemp);
-        alertIcon.style.display = (isCurrentlyHot && !e.target.checked) ? "block" : "none";
+        if (e.target.checked) {
+          badge.classList.add("resolved");
+          badge.textContent = "✓ In Shade";
+        } else if (isCurrentlyHot) {
+          badge.classList.remove("resolved");
+          badge.textContent = "☀️ Too Hot!";
+        }
       }
     });
   }
 
-  // Attach delete listener — stops propagation so it doesn't trigger the toggle
-  const deleteBtn = card.querySelector(".btn-delete");
+  // --- Event: Delete button ---
+  const deleteBtn = card.querySelector(".btn-delete-card");
   if (deleteBtn) {
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -256,7 +368,7 @@ function updatePlantShadeState(id, inShade) {
 }
 
 function getIntervalDays(freqStr) {
-  if (!freqStr) return 7;
+  if (!freqStr || typeof freqStr !== 'string') return 7;
   const str = freqStr.toLowerCase();
   if (str.includes("day") && str.includes("2")) return 2;
   if (str.includes("day") && str.includes("3")) return 3;
@@ -301,16 +413,26 @@ function updateTemperatureAlerts() {
     const maxTemp = getPlantMaxTemp(plant.species);
     const isTooHot = window.currentTemperature > maxTemp;
 
-    // Toggle Sun Icon
-    const alertIcon = document.getElementById(`temp-alert-${plant.id}`);
-    if (alertIcon) {
-      alertIcon.style.display = (isTooHot && !isInShade) ? 'block' : 'none';
+    // Toggle Sun Badge
+    const sunBadge = document.getElementById(`sun-badge-${plant.id}`);
+    if (sunBadge) {
+      if (isTooHot && !isInShade) {
+        sunBadge.style.display = '';
+        sunBadge.classList.remove("resolved");
+        sunBadge.textContent = "☀️ Too Hot!";
+      } else if (isInShade) {
+        sunBadge.style.display = '';
+        sunBadge.classList.add("resolved");
+        sunBadge.textContent = "✓ In Shade";
+      } else {
+        sunBadge.style.display = 'none';
+      }
     }
 
-    // Toggle Shade Checkbox Container
-    const shadeContainer = document.getElementById(`shade-container-${plant.id}`);
-    if (shadeContainer) {
-      shadeContainer.style.display = (isTooHot || isInShade) ? 'block' : 'none';
+    // Toggle Shade Checklist Item
+    const shadeItem = document.getElementById(`shade-item-${plant.id}`);
+    if (shadeItem) {
+      shadeItem.style.display = (isTooHot || isInShade) ? '' : 'none';
     }
   });
 }
@@ -323,11 +445,13 @@ function renderPlants() {
   const plants = loadPlants();
 
   if (plants.length === 0) {
-    // Show a friendly empty state message
+    // Show a friendly empty state
     list.innerHTML = `
-      <p style="text-align:center; color:#687d31; margin-top:32px; font-size:0.9rem;">
-        No plants yet — tap <strong>+</strong> to add your first one!
-      </p>
+      <div class="empty-state">
+        <span class="empty-state-icon">🌱</span>
+        <h3 class="empty-state-title">No plants yet</h3>
+        <p class="empty-state-text">Tap the <strong>+</strong> button below to add your first plant and start your green journey!</p>
+      </div>
     `;
     return;
   }
@@ -338,7 +462,47 @@ function renderPlants() {
 }
 
 /* -------------------------------------------------------
-   4. ADD PLANT MODAL
+   4. IMAGE UPLOAD HELPERS
+   Handles image preview in the Add Plant modal
+------------------------------------------------------- */
+
+// Selected file reference for upload
+let selectedPlantImageFile = null;
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  selectedPlantImageFile = file;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById("imagePreview");
+    const container = document.getElementById("imagePreviewContainer");
+    const uploadArea = document.getElementById("imageUploadArea");
+
+    preview.src = e.target.result;
+    container.style.display = "block";
+    uploadArea.style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImagePreview() {
+  selectedPlantImageFile = null;
+  const preview = document.getElementById("imagePreview");
+  const container = document.getElementById("imagePreviewContainer");
+  const uploadArea = document.getElementById("imageUploadArea");
+  const fileInput = document.getElementById("plantImage");
+
+  preview.src = "";
+  container.style.display = "none";
+  uploadArea.style.display = "block";
+  fileInput.value = "";
+}
+
+/* -------------------------------------------------------
+   5. ADD PLANT MODAL
    The FAB (+) opens a bottom-sheet modal.
    On save, a new plant is added to storage and the list
    is re-rendered without a page reload.
@@ -373,7 +537,7 @@ async function fetchPlantTypes() {
 }
 
 // Create a new plant object and persist it, then refresh the list
-function savePlant() {
+async function savePlant() {
   const speciesSelect = document.getElementById("plantSpecies");
   const speciesId = speciesSelect.value;
   const nickname = document.getElementById("plantName").value.trim();
@@ -383,29 +547,67 @@ function savePlant() {
     return; // do nothing if species is not selected
   }
 
-  const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
-  const plants = loadPlants();
+  const btnSave = document.getElementById("btnSave");
+  const originalText = btnSave.innerHTML;
+  
+  // Show loading state
+  btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+  btnSave.disabled = true;
 
-  const newPlant = {
-    id: Date.now(), // unique numeric id based on timestamp
-    species: selectedType.name,
-    nickname: nickname,
-    waterFreq: selectedType.waterFreq,
-    intervalDays: getIntervalDays(selectedType.waterFreq),
-    addedAt: new Date().toISOString(),
-    lastWateredAt: null,
-  };
+  try {
+    const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
+    const plants = loadPlants();
 
-  plants.push(newPlant);
-  savePlants(plants);
+    let imageUrl = null;
 
-  // Close the bootstrap modal
-  const modalEl = document.getElementById("addPlantModal");
-  const modal =
-    bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-  modal.hide();
+    // Upload image if one was selected
+    if (selectedPlantImageFile) {
+      const formData = new FormData();
+      formData.append("image", selectedPlantImageFile);
 
-  renderPlants(); // refresh the list to show the new card
+      const res = await fetch("/api/plants/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        imageUrl = data.imageUrl;
+      }
+    }
+
+    const newPlant = {
+      id: Date.now(), // unique numeric id based on timestamp
+      species: selectedType.name,
+      nickname: nickname,
+      waterFreq: selectedType.waterFreq,
+      intervalDays: getIntervalDays(selectedType.waterFreq),
+      addedAt: new Date().toISOString(),
+      lastWateredAt: null,
+      imageUrl: imageUrl,
+    };
+
+    plants.push(newPlant);
+    savePlants(plants);
+
+    // Close the bootstrap modal
+    const modalEl = document.getElementById("addPlantModal");
+    const modal =
+      bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.hide();
+
+    // Reset image upload state
+    selectedPlantImageFile = null;
+
+    renderPlants(); // refresh the list to show the new card
+  } catch (err) {
+    console.error("Error saving plant:", err);
+    alert("An error occurred while saving the plant.");
+  } finally {
+    // Restore button state
+    btnSave.innerHTML = originalText;
+    btnSave.disabled = false;
+  }
 }
 
 // User Guide Walkthrough Logic
@@ -464,6 +666,8 @@ function initModal() {
     modalEl.addEventListener("show.bs.modal", () => {
       document.getElementById("plantName").value = "";
       document.getElementById("plantSpecies").value = "";
+      // Reset image preview
+      removeImagePreview();
     });
   }
 

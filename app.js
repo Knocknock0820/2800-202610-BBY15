@@ -105,7 +105,17 @@ const storage = new CloudinaryStorage({
   },
 });
 
+// Separate storage config for plant images
+const plantImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "plant_images",
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"],
+  },
+});
+
 const upload = multer({ storage: storage });
+const plantImageUpload = multer({ storage: plantImageStorage });
 
 function requiredLogin(req, res, next) {
   if (!req.session.authenticated) {
@@ -336,6 +346,26 @@ app.post(
     } catch (err) {
       console.error("Error uploading post", err);
       res.status(500).send("Error uploading post");
+    }
+  },
+);
+
+// Upload plant image to Cloudinary
+// Modified by: Harun Yaprak
+app.post(
+  "/api/plants/upload-image",
+  requiredLogin,
+  plantImageUpload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+      const imageUrl = req.file.path;
+      res.json({ imageUrl: imageUrl });
+    } catch (err) {
+      console.error("Error uploading plant image:", err);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   },
 );
