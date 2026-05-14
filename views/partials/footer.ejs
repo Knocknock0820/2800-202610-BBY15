@@ -1,0 +1,45 @@
+<!--
+  Partial: footer.ejs
+  Usage: include('partials/footer', { showBottomNav: true, activeTab: 'home' })
+
+  Variables:
+  - showBottomNav (optional, default false) : renders the bottom nav bar (for app pages)
+  - activeTab     (optional)               : 'home' | 'community' | 'profile'
+                                             marks the matching tab button as active
+  - showCopyright (optional, default false) : renders the simple text copyright footer
+-->
+
+<% if (typeof showBottomNav !== 'undefined' && showBottomNav) { %>
+  <!-- ===== BOTTOM NAVIGATION BAR ===== -->
+  <nav class="bottom-nav">
+    <a href="/community">
+      <button class="nav-tab <%= typeof activeTab !== 'undefined' && activeTab === 'community' ? 'active' : '' %>"
+              title="Community">
+        <img src="/icons/group.png" alt="Community" class="nav-icon" />
+      </button>
+    </a>
+
+    <a href="/">
+      <button class="nav-tab <%= typeof activeTab !== 'undefined' && activeTab === 'home' ? 'active' : '' %>"
+              title="Home">
+        <img src="/icons/home.png" alt="Home" class="nav-icon" />
+      </button>
+    </a>
+
+    <a href="/profile">
+      <button class="nav-tab <%= typeof activeTab !== 'undefined' && activeTab === 'profile' ? 'active' : '' %>"
+              title="Profile">
+        <img src="/icons/account.png" alt="Profile" class="nav-icon" />
+      </button>
+    </a>
+  </nav>
+<% } %>
+
+<% if (typeof showCopyright !== 'undefined' && showCopyright) { %>
+  <footer class="text-center py-3" style="color: #687d31; font-size: 0.85rem;">
+    &copy; 2026 Sprout &middot; Team BBY15 &middot; BCIT
+  </footer>
+<% } %>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

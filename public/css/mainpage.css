@@ -1,0 +1,177 @@
+/* ================================================
+   public/css/mainpage.css  –  Main page
+   Project palette:
+     dark green  : #19350c
+     mid green   : #687d31
+     off-white   : #d5d3cc
+     background  : #f2f1ee
+   ================================================ */
+
+/* ---------- RESET & BASE ---------- */
+/* *,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+} */
+
+body {
+  font-family: "DM Sans", sans-serif;
+  background-color: #f2f1ee;
+  color: #1a1a1a;
+  /* Space at the bottom so content doesn't hide behind the fixed nav */
+  padding-bottom: 70px;
+}
+
+/* ---------- HEADER ---------- */
+.custom-navbar {
+  background-color: #19350c; /* dark green — matches navbar in landing */
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.app-logo {
+  font-family: "Playfair Display", serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #d5d3cc !important; /* off-white */
+  letter-spacing: -0.5px;
+  margin-bottom: 0;
+}
+
+.my-plants-title {
+  font-family: "Playfair Display", serif;
+  color: #19350c;
+  font-weight: 700;
+}
+
+/* ---------- WEATHER STRIP ---------- */
+.weather-strip {
+  background-color: #d5d3cc; /* off-white — matches login card background feel */
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  color: #19350c; /* dark green text for contrast */
+  border-bottom: 1px solid rgba(25, 53, 12, 0.1);
+  font-weight: 500;
+}
+
+/* ---------- PLANTS MAIN ---------- */
+.plants-main {
+  padding: 16px 16px 0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.plant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- BOTTOM NAVIGATION BAR ---------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 62px;
+  background-color: #19350c; /* dark green — matches landing/login navbar */
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 99;
+}
+
+.nav-tab {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+/* Invert black PNGs to white on the dark navbar */
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: invert(1) opacity(0.45);
+  transition: filter 0.2s;
+}
+
+.nav-tab:hover .nav-icon,
+.nav-tab.active .nav-icon {
+  filter: invert(1) opacity(1);
+}
+
+/* --- User Guide Modal Custom Sizing --- */
+
+/* Style for the User Guide icon in the navbar */
+.nav-guide-icon {
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.nav-guide-icon:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+/* Optional: Ensure the button doesn't show a blue outline when clicked */
+.btn:focus,
+.btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#userGuideModal .modal-dialog {
+  max-width: 90vw;
+  width: 90vw;
+  margin: 1.75rem auto;
+}
+
+#userGuideModal .modal-content {
+  /* The whole modal will now adjust its height based on the fixed parts inside */
+  background-color: #d5d3cc;
+  border-radius: 16px;
+  border: 2px solid #687d31;
+}
+
+/* The Placeholder: FIXED DIMENSIONS */
+#userGuideModal .guide-photo-placeholder {
+  width: 100%; /* 100% of the modal width */
+  height: 50vh; /* FIXED: Always 50% of screen height */
+  background: #e9e8e3;
+  border-radius: 12px;
+  overflow: hidden; /* This hides the "overflow part" of the image */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* The Image: FILLS THE FIXED BOX */
+#userGuideModal #guidePhotoDisplay {
+  width: 100%;
+  height: 100%;
+  /* 'contain' shows the whole image without cropping */
+  object-fit: contain;
+  display: block;
+}
+
+.modal-backdrop.show {
+  opacity: 0.8;
+  background-color: #19350c; /* Your theme's dark green */
+}
+
+.guide-photo-placeholder {
+  border: 1px solid rgba(104, 125, 49, 0.2);
+}

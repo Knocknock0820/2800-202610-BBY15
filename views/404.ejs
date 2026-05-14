@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head', { title: '404 - Page Not Found' }) %>
+    <%- include('partials/navbar', { showLogout: false, activeLink: '' }) %>  
+  </head>
+  <!-- Custom styles for 404 page -->
+  <body class="bg-#d5d3cc" style="background-color: #d5d3cc">
+    <div
+      class="d-flex flex-column justify-content-center align-items-center text-center"
+      style="height: 100vh"
+    >
+      <h1 class="fw-bold" style="font-size: 10rem; color: #19350c">404</h1>
+
+      <h2 class="display-4 fw-bold mb-3 text-dark">Page Not Found</h2>
+
+      <p class="lead text-muted mb-5">
+        Oops! The page you are looking for has been uprooted or doesn't exist.
+      </p>
+
+      <a
+        href="/"
+        class="btn btn-success btn-lg px-5 fw-bold"
+        style="background-color: #687d31; border: none"
+      >
+        Go Back to Home
+      </a>
+    </div>
+
+    <%- include('partials/footer', { showBottomNav: false }) %>
+  </body>
+</html>

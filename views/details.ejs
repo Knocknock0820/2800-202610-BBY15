@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <%- include('partials/head', { title: species + ' Details' , pageCSS: '/css/details.css' }) %>
+    <!-- details.css already imports mainpage.css; if not, add: -->
+    <link rel="stylesheet" href="/css/mainpage.css" />
+</head>
+
+<body>
+  <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
+
+    <script type="application/json" id="lifecycle-images-data"><%- JSON.stringify(lifecycleImages || {}) %></script>
+
+    <main class="container mt-4 mb-5 pb-5">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0 text-capitalize" style="color: #19350c;">
+          <%= species %>
+        </h2>
+        <span class="badge rounded-pill"
+          style="background-color: transparent; color: #19350c; font-size: 1rem; border: 0;">
+          Difficulty:
+          <span style="color: #0488b1;">
+            <%= difficulty %>
+          </span>
+        </span>
+      </div>
+
+      <div class="plant-photo-placeholder mb-4 shadow-sm overflow-hidden">
+        <img id="plantImage" src="<%= heroImage || '/images/error.png' %>" alt="<%= species %>"
+          class="img-fluid w-100 h-100" style="object-fit: cover;" onerror="tryPng(this)">
+      </div>
+
+      <div class="mb-4 px-2">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/icons/sun.png" alt="Sunlight" width="28" height="28" class="care-icon icon-sun">
+          <span class="ms-3 icon-text" style="color: #dc3545;">
+            <%= typeof temp==='number' ? (temp + '°C' ) : '—' %>
+          </span>
+        </div>
+        <!-- <a href="https://www.flaticon.com/free-icons/sun" title="sun icons">Sun icons created by Good Ware - Flaticon</a> -->
+
+        <div class="d-flex align-items-center">
+          <img src="/icons/h2o.png" alt="Water" width="28" height="28" class="care-icon icon-water">
+          <span class="ms-3 icon-text" style="color: #0d6efd;">
+            <% if (typeof waterFreq==='number' ) { %>
+              Water every <%= waterFreq %> day<%= waterFreq> 1 ? 's' : '' %>
+                  <% } else { %>
+                    Water schedule: N/A
+                    <% } %>
+          </span>
+        </div>
+      </div>
+      <!-- <a href="https://www.flaticon.com/free-icons/water" title="water icons">Water icons created by Freepik - Flaticon</a> -->
+
+      <div class="card detail-card mb-4 border life-cycle-container">
+        <div class="card-body text-center">
+          <div class="d-flex justify-content-center align-items-center mb-3">
+            <h5 class="fw-bold mb-0 cycle-title">Life Cycle</h5>
+          </div>
+
+          <div class="lifecycle-photo-wrapper mb-3 shadow-sm">
+            <img id="lifecycleDisplay" src="<%= lifecycleImages[slug + '_seed'] || '/images/error.png' %>"
+              onerror="tryPng(this)" alt="Plant Stage" class="img-fluid">
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center small fw-bold lifecycle-buttons">
+            <button class="btn-stage active" onclick="changeStage(this, initialStage)">Seed</button>
+            <button class="btn-stage" onclick="changeStage(this, '<%= slug %>_sprout')">Sprout</button>
+            <button class="btn-stage" onclick="changeStage(this, '<%= slug %>_mature')">Mature</button>
+            <button class="btn-stage" onclick="changeStage(this, '<%= slug %>_flower')">Flower</button>
+            <button class="btn-stage" onclick="changeStage(this, '<%= slug %>_harvest')">Harvest</button>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const lifecycleImages = JSON.parse(document.getElementById('lifecycle-images-data').textContent || '{}');
+        const initialStage = '<%= slug %>_seed';
+
+        function changeStage(btnElement, imageName) {
+          const displayImg = document.getElementById('lifecycleDisplay');
+          const nextImageSrc = lifecycleImages[imageName] || '/images/error.png';
+
+          if (displayImg.dataset.currentSrc === nextImageSrc) {
+            return;
+          }
+
+          displayImg.dataset.currentSrc = nextImageSrc;
+          displayImg.classList.add('is-hidden');
+
+          const fadeOutThenSwap = () => {
+            displayImg.removeEventListener('transitionend', fadeOutThenSwap);
+            displayImg.src = nextImageSrc;
+
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                displayImg.classList.remove('is-hidden');
+              });
+            });
+          };
+
+          displayImg.addEventListener('transitionend', (event) => {
+            if (event.propertyName === 'opacity' && displayImg.classList.contains('is-hidden')) {
+              fadeOutThenSwap();
+            }
+          }, { once: true });
+
+          // Update Button UI
+          document.querySelectorAll('.btn-stage').forEach(btn => btn.classList.remove('active'));
+          btnElement.classList.add('active');
+        }
+      </script>
+
+      <div class="card detail-card border description-container">
+        <div class="card-body">
+          <h2 class="section-title">Description</h2>
+          <div class="description-content">
+            <%- descriptionHtml %>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <script>
+      function tryPng(img) {
+        // Check if we are currently looking for a .jpg
+        if (img.src.includes('.jpg')) {
+          img.src = img.src.replace('.jpg', '.png');
+        }
+        // If the .png also fails, show a placeholder
+        else {
+          img.src = '/images/error.png'; // Path to a generic backup image
+          img.alt = "Image not available";
+        }
+      }
+    </script>
+
+    <script>
+      // Preload hero and lifecycle images so switching stages is instant.
+      document.addEventListener('DOMContentLoaded', () => {
+        try {
+          const lifecycleJsonEl = document.getElementById('lifecycle-images-data');
+          const lifecycleData = lifecycleJsonEl ? JSON.parse(lifecycleJsonEl.textContent || '{}') : {};
+
+          // Preload hero image
+          const heroEl = document.getElementById('plantImage');
+          if (heroEl && heroEl.src) {
+            const heroPre = new Image();
+            heroPre.src = heroEl.src;
+          }
+
+          // Ensure the displayed lifecycle image knows its current src
+          const displayImg = document.getElementById('lifecycleDisplay');
+          if (displayImg) {
+            const initialKey = '<%= slug %>_seed';
+            displayImg.dataset.currentSrc = lifecycleData[initialKey] || displayImg.src;
+          }
+
+          // Preload all lifecycle images (Cloudinary URLs or data URLs)
+          Object.values(lifecycleData).forEach((url) => {
+            if (url) {
+              const img = new Image();
+              img.src = url;
+            }
+          });
+        } catch (e) {
+          // Silent fail — preloading is a perf optimization only
+          console.warn('Preload error', e);
+        }
+      });
+    </script>
+
+    <%- include('partials/footer', { showBottomNav: true, activeTab: '' }) %>
+</body>
+
+</html>
