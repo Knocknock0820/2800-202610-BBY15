@@ -146,6 +146,14 @@ function createPlantCard(plant) {
     window.currentTemperature > maxTemp;
   const showSunAlert = isTooHot && !isInShade;
 
+  // Edit details button
+  const editBtn = card.querySelector(".btn-edit-card");
+  if (editBtn) {
+    editBtn.addEventListener("click", (e) => {
+      // delete this comment
+    });
+  }
+
   // Use user-uploaded image or default
   const plantImageUrl = plant.imageUrl || getDefaultPlantImage(plant.species);
 
