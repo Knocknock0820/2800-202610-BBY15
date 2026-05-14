@@ -69,7 +69,13 @@ const defaultPlants = [
 
 // Load plant data from files
 async function loadPlantsWithFiles() {
-  const monsteraBasePath = path.join(__dirname, "..", "images");
+  const monsteraBasePath = path.join(
+    __dirname,
+    "..",
+    "images",
+    "details",
+    "monstera",
+  );
   const descriptionsPath = path.join(__dirname, "..", "descriptions");
 
   // Load Monstera hero image

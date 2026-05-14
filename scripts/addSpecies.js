@@ -7,7 +7,7 @@
  *
  * Example: node scripts/addSpecies.js "Snake Plant" snake_plant "Once a month" "Easy"
  *
- * This script automatically discovers files from public/images/ and public/descriptions/
+ * This script automatically discovers files from public/images/details/<slug>/ and public/descriptions/
  * following the naming convention:
  * - Hero image: {slug}.jpg (or .png)
  * - Lifecycle images: {slug}_{stage}.jpg where stage = seed, sprout, mature, flower, harvest
@@ -117,7 +117,14 @@ function discoverDescription(descriptionsPath, slug) {
 
 // Create plant object from discovered files
 async function createPlantFromFiles(name, slug, waterFreq, difficulty) {
-  const imagesPath = path.join(__dirname, "..", "public", "images");
+  const imagesPath = path.join(
+    __dirname,
+    "..",
+    "public",
+    "images",
+    "details",
+    slug,
+  );
   const descriptionsPath = path.join(__dirname, "..", "public", "descriptions");
 
   const plant = {
