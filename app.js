@@ -340,11 +340,10 @@ app.post(
         whyGardening,
       };
 
-      // If a photo was uploaded, convert buffer --> base64 and store it in mongo
+      // Save Cloudinary image URL
       if (req.file) {
-        const base64 = req.file.buffer.toString("base64");
-        const mimeType = req.file.mimetype; // e.g. "image/jpeg"
-        updates.photoUrl = `data:${mimeType};base64,${base64}`; // usable directly in <img src="">
+        updates.photoUrl = req.file.path;
+        updates.photoPublicId = req.file.filename;
       }
 
       await userCollection.updateOne(
