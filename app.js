@@ -19,6 +19,7 @@ const path = require("path"); // Built-in Path module
 const { marked } = require("marked");
 
 const weatherApiRouter = require("./routes/weatherApi");
+const { seedPlants, loadPlantsWithFiles } = require("./public/js/seedPlants");
 
 const app = express();
 const port = 3000;
@@ -47,33 +48,21 @@ const postCollection = database
   .db(mongodb_user_database)
   .collection("community-posts");
 
-/* Seed example plants types to database on startup (if database is empty)
-  This function will be changed in the future,
-   after we figured out how to implement the database  */
-
-// This code is handwritten, but got help from AI.
-//Modified by: Harun Yaprak
-async function seedPlants() {
+// Load plant files and seed on startup
+(async () => {
   try {
-    const count = await plantCollection.countDocuments();
-    if (count === 0) {
-      const defaultPlants = [
-        { name: "Monstera", waterFreq: "Every week" },
-        { name: "Snake Plant", waterFreq: "Once a month" },
-        { name: "Cactus", waterFreq: "Every 2 weeks" },
-        { name: "Peace Lily", waterFreq: "Every 3 days" },
-        { name: "Spider Plant", waterFreq: "Every week" },
-        { name: "Pothos", waterFreq: "Every 1-2 weeks" },
-        { name: "Aloe Vera", waterFreq: "Every 2-3 weeks" },
-      ];
-      await plantCollection.insertMany(defaultPlants);
-      console.log("Seeded default plant types into database.");
+    const existingPlants = await plantCollection.countDocuments();
+
+    if (existingPlants === 0) {
+      await loadPlantsWithFiles();
+      await seedPlants(plantCollection);
+    } else {
+      console.log("Plant types already exist, skipping initial seed.");
     }
   } catch (err) {
-    console.error("Error seeding plants:", err);
+    console.error("Error loading and seeding plants:", err);
   }
-}
-seedPlants();
+})();
 
 app.set("view engine", "ejs");
 app.use(express.static("public"));
@@ -151,13 +140,75 @@ app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await plantCollection
       .find({})
-      .project({ _id: 1, name: 1, waterFreq: 1 })
+      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1 })
       .toArray();
     res.json(plants);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch plants" });
   }
 });
+
+// API endpoint to fetch hero image for a plant
+//Modified by: Harun Yaprak
+app.get("/api/plants/:slug/hero-image", requiredLogin, async (req, res) => {
+  const slug = req.params.slug;
+
+  try {
+    const plant = await plantCollection.findOne({ slug });
+
+    if (!plant || !plant.heroImage) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+
+    if (
+      typeof plant.heroImage === "string" &&
+      plant.heroImage.startsWith("http")
+    ) {
+      return res.redirect(plant.heroImage);
+    }
+
+    // Backward compatibility for older base64 records
+    const buffer = Buffer.from(plant.heroImage, "base64");
+    res.set("Content-Type", "image/jpeg");
+    res.send(buffer);
+  } catch (err) {
+    console.error("Error fetching hero image:", err);
+    res.status(500).json({ error: "Failed to fetch image" });
+  }
+});
+
+// API endpoint to fetch lifecycle images for a plant
+//Modified by: Harun Yaprak
+app.get(
+  "/api/plants/:slug/lifecycle-image/:imageName",
+  requiredLogin,
+  async (req, res) => {
+    const slug = req.params.slug;
+    const imageName = req.params.imageName;
+
+    try {
+      const plant = await plantCollection.findOne({ slug });
+
+      if (!plant || !plant.images || !plant.images[imageName]) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+
+      const imageValue = plant.images[imageName];
+
+      if (typeof imageValue === "string" && imageValue.startsWith("http")) {
+        return res.redirect(imageValue);
+      }
+
+      // Backward compatibility for older base64 records
+      const buffer = Buffer.from(imageValue, "base64");
+      res.set("Content-Type", "image/jpeg");
+      res.send(buffer);
+    } catch (err) {
+      console.error("Error fetching lifecycle image:", err);
+      res.status(500).json({ error: "Failed to fetch image" });
+    }
+  },
+);
 
 // Render the about page
 //Modified by: Harun Yaprak
@@ -371,31 +422,59 @@ app.post(
 );
 
 // Render the details page
-app.get("/details/:species", requiredLogin, async (req, res) => {
-  const species = req.params.species;
-  const filePath = path.join(
-    __dirname,
-    "public",
-    "descriptions",
-    `${species}.md`,
-  );
+//Modified by: Steven Chi
+app.get("/details/:slug", requiredLogin, async (req, res) => {
+  const slug = req.params.slug;
 
-  let descriptionHtml = "";
+  function toDataUrl(base64String) {
+    if (!base64String) {
+      return null;
+    }
 
-  try {
-    // Read the file content synchronously (simplest for this use case)
-    const markdownString = fs.readFileSync(filePath, "utf8");
-    // Convert to HTML
-    descriptionHtml = marked.parse(markdownString);
-  } catch (err) {
-    // Fallback if the file doesn't exist
-    descriptionHtml = `<p>No detailed description found for ${species}. Check back later!</p>`;
+    if (typeof base64String === "string" && base64String.startsWith("http")) {
+      return base64String;
+    }
+
+    return `data:image/jpeg;base64,${base64String}`;
   }
 
-  res.render("details.ejs", {
-    species: req.params.species,
-    descriptionHtml: descriptionHtml,
-  });
+  try {
+    // Fetch plant details from database
+    const plant = await plantCollection.findOne({ slug });
+
+    if (!plant) {
+      return res.status(404).render("404");
+    }
+
+    // Convert markdown description to HTML
+    let descriptionHtml = "";
+    if (plant.description) {
+      descriptionHtml = marked.parse(plant.description);
+    }
+
+    res.render("details.ejs", {
+      plant: plant,
+      species: plant.name,
+      slug: slug,
+      difficulty: plant.difficulty || "Unknown",
+      heroImage: toDataUrl(plant.heroImage),
+      lifecycleImages: plant.images
+        ? Object.fromEntries(
+            Object.entries(plant.images).map(([key, value]) => [
+              key,
+              toDataUrl(value),
+            ]),
+          )
+        : {},
+      descriptionHtml: descriptionHtml,
+      // New fields for template display
+      waterFreq: typeof plant.waterFreq === "number" ? plant.waterFreq : null,
+      temp: typeof plant.temp === "number" ? plant.temp : null,
+    });
+  } catch (err) {
+    console.error("Error fetching plant details:", err);
+    res.status(500).render("404");
+  }
 });
 
 // Handle logout

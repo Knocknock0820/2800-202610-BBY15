@@ -141,14 +141,18 @@ function createPlantCard(plant) {
   }
 
   const maxTemp = getPlantMaxTemp(plant.species);
-  const isTooHot = (typeof window.currentTemperature !== 'undefined') && (window.currentTemperature > maxTemp);
+  const isTooHot =
+    typeof window.currentTemperature !== "undefined" &&
+    window.currentTemperature > maxTemp;
   const showSunAlert = isTooHot && !isInShade;
 
   // Use user-uploaded image or default
   const plantImageUrl = plant.imageUrl || getDefaultPlantImage(plant.species);
 
   // Build badge HTML
-  const waterBadgeClass = isWatered ? "badge-notify badge-water resolved" : "badge-notify badge-water";
+  const waterBadgeClass = isWatered
+    ? "badge-notify badge-water resolved"
+    : "badge-notify badge-water";
   const waterBadgeText = isWatered ? "✓ Watered" : "💧 Needs Water";
   const waterBadgeHTML = `<span class="${waterBadgeClass}" id="water-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">${waterBadgeText}</span>`;
 
@@ -203,7 +207,7 @@ function createPlantCard(plant) {
           ${nicknameHTML}
           <p class="card-date">Added ${addedDate}</p>
           <div class="card-actions">
-            <a href="/details/${plant.species}" class="btn-details">Details →</a>
+            <a href="/details/${plant.slug}" class="btn-details">Details →</a>
             <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
               <img src="/icons/bin.png" alt="Delete" />
             </button>
@@ -222,7 +226,7 @@ function createPlantCard(plant) {
           </div>
           
           <!-- Move to Shade Checklist (conditional) -->
-          <div class="checklist-item shade-item" id="shade-item-${plant.id}" style="${(isTooHot || isInShade) ? '' : 'display: none;'}">
+          <div class="checklist-item shade-item" id="shade-item-${plant.id}" style="${isTooHot || isInShade ? "" : "display: none;"}">
             <input type="checkbox" class="shade-checkbox" id="check-shade-${plant.id}" ${isInShade ? "checked" : ""} />
             <label for="check-shade-${plant.id}">Move to shade</label>
             <span class="freq-tag">8hr cooldown</span>
@@ -237,8 +241,9 @@ function createPlantCard(plant) {
   // --- Event: Card click toggles checklist ---
   card.addEventListener("click", (e) => {
     // Ignore clicks on interactive elements
-    if (e.target.closest("button, a, input, label, .img-upload-overlay")) return;
-    
+    if (e.target.closest("button, a, input, label, .img-upload-overlay"))
+      return;
+
     const checklist = card.querySelector(".checklist-panel");
     if (checklist) {
       checklist.classList.toggle("open");
@@ -272,7 +277,7 @@ function createPlantCard(plant) {
 
         // Save imageUrl to localStorage
         const plants = loadPlants();
-        const idx = plants.findIndex(p => p.id === plant.id);
+        const idx = plants.findIndex((p) => p.id === plant.id);
         if (idx !== -1) {
           plants[idx].imageUrl = data.imageUrl;
           savePlants(plants);
@@ -316,7 +321,9 @@ function createPlantCard(plant) {
       const badge = card.querySelector(`#sun-badge-${plant.id}`);
       if (badge) {
         const maxTemp = getPlantMaxTemp(plant.species);
-        const isCurrentlyHot = (typeof window.currentTemperature !== 'undefined') && (window.currentTemperature > maxTemp);
+        const isCurrentlyHot =
+          typeof window.currentTemperature !== "undefined" &&
+          window.currentTemperature > maxTemp;
         if (e.target.checked) {
           badge.classList.add("resolved");
           badge.textContent = "✓ In Shade";
@@ -368,7 +375,7 @@ function updatePlantShadeState(id, inShade) {
 }
 
 function getIntervalDays(freqStr) {
-  if (!freqStr || typeof freqStr !== 'string') return 7;
+  if (!freqStr || typeof freqStr !== "string") return 7;
   const str = freqStr.toLowerCase();
   if (str.includes("day") && str.includes("2")) return 2;
   if (str.includes("day") && str.includes("3")) return 3;
@@ -383,26 +390,23 @@ function getIntervalDays(freqStr) {
 // After we implement plant database, we can remove this function and just get the data from the database
 // Currently used to get max temperature tolerance for a plant species
 function getPlantMaxTemp(species) {
-  const temps = {
-    "Monstera": 10,
-    "Snake Plant": 35,
-    "Cactus": 40,
-    "Peace Lily": 28,
-    "Spider Plant": 32,
-    "Pothos": 32,
-    "Aloe Vera": 35
-  };
-  return temps[species] || 30; // default 30°C if not specified
+  if (!availablePlantTypes || !availablePlantTypes.length) return 30;
+  // Try to find by name or slug
+  const found = availablePlantTypes.find(
+    (p) => p.name === species || p.slug === species,
+  );
+  if (found && typeof found.temp === "number") return found.temp;
+  return 30; // sensible default
 }
 
 // Update temperature alerts for all rendered cards dynamically
 // Adapted from AI, used to show temperature alerts for plants
 // Modified by: Harun Yaprak
 function updateTemperatureAlerts() {
-  if (typeof window.currentTemperature === 'undefined') return;
+  if (typeof window.currentTemperature === "undefined") return;
   const plants = loadPlants();
   const now = Date.now();
-  plants.forEach(plant => {
+  plants.forEach((plant) => {
     let isInShade = false;
     if (plant.movedToShadeAt) {
       const shadeTime = new Date(plant.movedToShadeAt).getTime();
@@ -417,22 +421,22 @@ function updateTemperatureAlerts() {
     const sunBadge = document.getElementById(`sun-badge-${plant.id}`);
     if (sunBadge) {
       if (isTooHot && !isInShade) {
-        sunBadge.style.display = '';
+        sunBadge.style.display = "";
         sunBadge.classList.remove("resolved");
         sunBadge.textContent = "☀️ Too Hot!";
       } else if (isInShade) {
-        sunBadge.style.display = '';
+        sunBadge.style.display = "";
         sunBadge.classList.add("resolved");
         sunBadge.textContent = "✓ In Shade";
       } else {
-        sunBadge.style.display = 'none';
+        sunBadge.style.display = "none";
       }
     }
 
     // Toggle Shade Checklist Item
     const shadeItem = document.getElementById(`shade-item-${plant.id}`);
     if (shadeItem) {
-      shadeItem.style.display = (isTooHot || isInShade) ? '' : 'none';
+      shadeItem.style.display = isTooHot || isInShade ? "" : "none";
     }
   });
 }
@@ -476,7 +480,7 @@ function handleImageSelect(event) {
   selectedPlantImageFile = file;
 
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = function (e) {
     const preview = document.getElementById("imagePreview");
     const container = document.getElementById("imagePreviewContainer");
     const uploadArea = document.getElementById("imageUploadArea");
@@ -549,9 +553,10 @@ async function savePlant() {
 
   const btnSave = document.getElementById("btnSave");
   const originalText = btnSave.innerHTML;
-  
+
   // Show loading state
-  btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+  btnSave.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
   btnSave.disabled = true;
 
   try {
@@ -579,14 +584,18 @@ async function savePlant() {
     const newPlant = {
       id: Date.now(), // unique numeric id based on timestamp
       species: selectedType.name,
+      slug: selectedType.slug,
       nickname: nickname,
       waterFreq: selectedType.waterFreq,
-      intervalDays: getIntervalDays(selectedType.waterFreq),
+      intervalDays:
+        typeof selectedType.waterFreq === "number"
+          ? selectedType.waterFreq
+          : getIntervalDays(selectedType.waterFreq),
       addedAt: new Date().toISOString(),
       lastWateredAt: null,
-      imageUrl: imageUrl,
     };
 
+    console.log("Saving new plant:", newPlant);
     plants.push(newPlant);
     savePlants(plants);
 
