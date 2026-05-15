@@ -1,39 +1,36 @@
-# Plant Care Guide: Peace Lily (*Spathiphyllum*)
+# Botanical Care Guide: *Spathiphyllum* (Peace Lily)
 
-The **Peace Lily** is a popular, elegant indoor plant known for its lush, dark green foliage and signature white, hood-like spathes. Beyond its aesthetic appeal, it is highly valued for its ability to thrive in low-light conditions and its reputation as an effective air-purifying houseplant.
+The **Peace Lily** (*Spathiphyllum*) is a popular indoor houseplant known for its elegant white spathes and lush, dark green foliage. Native to the tropical rainforests of the Americas, this plant is highly valued for its ability to thrive in low-light conditions and its reputation as an effective air purifier.
 
 ---
 
 ## Overview
-*   **Scientific Name:** *Spathiphyllum*
-*   **Plant Type:** Tropical evergreen perennial
-*   **Native Region:** Tropical regions of the Americas and Southeast Asia
-*   **Mature Size:** 1–4 feet tall (depending on the cultivar)
-*   **Difficulty:** Easy/Beginner-friendly
+*   **Scientific Name:** *Spathiphyllum* spp.
+*   **Family:** Araceae
+*   **Type:** Tropical perennial
+*   **Growth Habit:** Clumping, upright
+*   **Native Habitat:** Tropical regions of the Americas and Southeast Asia
+*   **Key Feature:** Produces white, hood-like bracts (spathes) surrounding a spadix.
 
 ---
 
 ## Light
-Peace Lilies are prized for their ability to tolerate **low-light conditions**, making them ideal for offices or rooms with limited natural light. 
-*   **Optimal Light:** Bright, **indirect sunlight**. 
-*   **Avoid:** Direct, harsh sun, which can scorch the leaves and cause brown, crispy patches. 
-*   **Indicator:** If your plant is not flowering, it is likely not receiving enough light. Move it to a slightly brighter location to encourage blooms.
-
----
+Peace Lilies are prized for their ability to tolerate **low to medium indirect light**.
+*   **Optimal Conditions:** Bright, filtered light (e.g., near an east-facing window).
+*   **Low Light:** They will survive in darker corners, though blooming may be reduced or inhibited.
+*   **Avoid:** Direct sunlight. Harsh afternoon sun can scorch the leaves, causing brown, crispy patches.
 
 ## Water
-Peace Lilies are "drama queens"—they will visibly wilt when they are thirsty, but they typically recover quickly once watered.
-*   **Frequency:** Water when the top 1–2 inches of soil feel dry to the touch. 
-*   **Technique:** Use filtered or distilled water if possible, as Peace Lilies are sensitive to chemicals like **fluoride and chlorine** found in tap water, which can cause brown leaf tips.
-*   **Humidity:** As tropical plants, they appreciate high humidity. Mist the leaves regularly or place the plant on a pebble tray filled with water to increase ambient moisture.
-
----
+The Peace Lily is famous for its dramatic "fainting" behavior; it will visibly wilt when it requires water.
+*   **Frequency:** Keep the soil consistently moist but never waterlogged. Allow the top inch of soil to dry out before watering again.
+*   **Water Quality:** These plants are sensitive to chemicals found in tap water, such as fluoride and chlorine. If leaf tips turn brown, consider using **distilled or filtered water**, or allow tap water to sit out overnight before use.
+*   **Humidity:** As a tropical plant, it appreciates high humidity. Mist the leaves regularly or place the pot on a tray of pebbles and water to increase ambient moisture.
 
 ## Soil
-A well-draining, moisture-retentive potting mix is essential to prevent root rot while keeping the plant hydrated.
-*   **Preferred Medium:** A high-quality peat-based potting mix amended with perlite or orchid bark to improve aeration.
-*   **pH Level:** Slightly acidic to neutral (5.8–6.5).
-*   **Drainage:** Always ensure your pot has drainage holes to prevent the roots from sitting in standing water.
+A high-quality, **well-draining potting mix** is essential to prevent root rot.
+*   **Recommended Mix:** A standard peat-based potting mix amended with perlite or orchid bark to improve aeration.
+*   **pH Requirements:** Prefers slightly acidic soil (pH 5.8–6.5).
+*   **Drainage:** Ensure the container has adequate drainage holes; the plant should never sit in standing water.
 
 ---
 
@@ -41,23 +38,20 @@ A well-draining, moisture-retentive potting mix is essential to prevent root rot
 
 | Problem | Likely Cause | Solution |
 | :--- | :--- | :--- |
-| **Brown Leaf Tips** | Fluoride in water or low humidity | Switch to distilled water; mist leaves regularly. |
-| **Yellow Leaves** | Overwatering or poor drainage | Check soil moisture; ensure pot has drainage holes. |
-| **Drooping Leaves** | Dehydration | Water thoroughly; the plant should perk up within hours. |
-| **Pests (Scale/Aphids)** | Dry air or poor airflow | Wipe leaves with neem oil or insecticidal soap. |
-| **No Flowers** | Insufficient light | Move to a brighter location with indirect light. |
+| **Yellowing Leaves** | Overwatering or poor drainage | Check soil moisture; ensure pot has drainage holes. |
+| **Brown Leaf Tips** | Low humidity or chemical sensitivity | Increase misting; use distilled or filtered water. |
+| **No Blooms** | Insufficient light | Move the plant to a brighter location (indirect light). |
+| **Drooping Leaves** | Underwatering | Provide a thorough watering; leaves will recover within hours. |
+| **Pests (Scale/Aphids)** | Infestation | Wipe leaves with a damp cloth or use neem oil. |
 
 ---
 
 ## Pet Safety
-**Warning:** The Peace Lily is **toxic to both cats and dogs.** 
+**Warning:** The Peace Lily is **toxic to cats and dogs**. 
 
-The plant contains **insoluble calcium oxalate crystals**. If ingested, these crystals can cause:
-*   Intense oral irritation and burning of the mouth, tongue, and lips.
-*   Excessive drooling and difficulty swallowing.
-*   Vomiting.
+The plant contains **insoluble calcium oxalate crystals**. If ingested, these crystals are released into the mouth and digestive tract, causing immediate irritation, swelling of the lips and tongue, excessive drooling, and difficulty swallowing. 
 
-**Recommendation:** Keep this plant out of reach of curious pets. If you suspect your pet has ingested any part of a Peace Lily, contact your veterinarian immediately. 
+*   **Recommendation:** Keep this plant in a location inaccessible to curious pets. If ingestion is suspected, contact your veterinarian immediately.
 
 ---
-*Disclaimer: This guide is for informational purposes. Botanical needs may vary based on specific cultivars and home environments.*
+*Disclaimer: This guide is for informational purposes. Always observe your plant’s specific reactions to its environment, as conditions in individual homes may vary.*

@@ -213,9 +213,9 @@ async function main() {
 
   try {
     console.log("Generating image...");
-    // const imageInfo = await generateImage(plantName, imagePath);
+    const imageInfo = await generateImage(plantName, imagePath);
     console.log(`Image saved to: ${imagePath}`);
-    // console.log(`Photo credit: ${imageInfo.photographer}`);
+    console.log(`Photo credit: ${imageInfo.photographer}`);
 
     console.log("Generating description...");
     const description = await generateDescription(plantName);
