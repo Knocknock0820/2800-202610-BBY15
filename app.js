@@ -333,7 +333,8 @@ app.get("/profile", requiredLogin, async (req, res) => {
   }
 });
 
-// should hangle allowing user to change password 
+// should hangle allowing user to change password option is avaiable in the profile
+// got help from youtube: https://youtu.be/AzA_LTDoFqY
 //by shivika
 app.post("/change-password", requiredLogin, async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
