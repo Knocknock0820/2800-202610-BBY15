@@ -8,7 +8,8 @@ const path = require("path");
 const API_KEY = process.env.GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-3.1-flash-lite";
-const OUTPUT_DIR = path.join(__dirname, "gemini-output");
+const IMAGES_ROOT = path.join(__dirname, "..", "public", "images", "details");
+const DESCRIPTIONS_ROOT = path.join(__dirname, "..", "public", "descriptions");
 
 const DEFAULT_PLANT = "monstera deliciosa";
 
@@ -31,44 +32,76 @@ function extractText(parts) {
     .trim();
 }
 
-function buildUnsplashSearchUrl(plantName) {
-  const query = `${plantName} plant`;
+function buildUnsplashSearchUrl(query, page = 1, perPage = 10) {
   const url = new URL("https://api.unsplash.com/search/photos");
   url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "1");
+  url.searchParams.set("per_page", String(perPage));
+  url.searchParams.set("page", String(page));
   url.searchParams.set("orientation", "portrait");
   url.searchParams.set("content_filter", "high");
   return url;
 }
 
-async function searchUnsplashPhoto(plantName) {
+function buildPlantVariantQuery(plantName, variant) {
+  const queries = {
+    hero: `${plantName} houseplant indoor photo`,
+    seed: `${plantName} seed photo`,
+    sprout: `${plantName} sprout young plant photo`,
+    mature: `${plantName} mature plant leaves photo`,
+    flower: `${plantName} flowering bloom photo`,
+    harvest: `${plantName} fruit photo`,
+  };
+
+  return queries[variant] || `${plantName} plant photo`;
+}
+
+async function searchUnsplashPhoto(query, usedPhotoIds = new Set()) {
   if (!UNSPLASH_ACCESS_KEY) {
     throw new Error(
       "Missing UNSPLASH_ACCESS_KEY. Add it to your environment or .env file.",
     );
   }
 
-  const response = await fetch(buildUnsplashSearchUrl(plantName), {
+  for (let page = 1; page <= 3; page += 1) {
+    const response = await fetch(buildUnsplashSearchUrl(query, page, 10), {
+      headers: {
+        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+        "Accept-Version": "v1",
+      },
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        payload?.errors?.[0] || payload?.error || "Unsplash search failed",
+      );
+    }
+
+    const results = payload.results || [];
+    const uniquePhoto = results.find(
+      (item) => item?.id && !usedPhotoIds.has(item.id),
+    );
+
+    if (uniquePhoto) {
+      return uniquePhoto;
+    }
+  }
+
+  throw new Error(`No unique Unsplash photo found for query "${query}".`);
+}
+
+async function registerUnsplashDownload(photo) {
+  if (!photo?.links?.download_location) {
+    return;
+  }
+
+  await fetch(photo.links.download_location, {
     headers: {
       Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
       "Accept-Version": "v1",
     },
   });
-
-  const payload = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      payload?.errors?.[0] || payload?.error || "Unsplash search failed",
-    );
-  }
-
-  const photo = payload.results?.[0];
-  if (!photo) {
-    throw new Error(`No Unsplash photo found for "${plantName}".`);
-  }
-
-  return photo;
 }
 
 async function downloadImage(imageUrl, outputPath) {
@@ -169,16 +202,29 @@ async function generateDescription(plantName) {
   return description;
 }
 
-async function generateImage(plantName, outputPath) {
-  const photo = await searchUnsplashPhoto(plantName);
+async function generateImage(plantName, variant, outputPath, usedPhotoIds) {
+  const primaryQuery = buildPlantVariantQuery(plantName, variant);
+
+  let photo;
+  try {
+    photo = await searchUnsplashPhoto(primaryQuery, usedPhotoIds);
+  } catch {
+    photo = await searchUnsplashPhoto(`${plantName} plant photo`, usedPhotoIds);
+  }
+
   const imageUrl = photo.urls?.regular || photo.urls?.full || photo.urls?.small;
 
   if (!imageUrl) {
     throw new Error(
-      `Unsplash returned no downloadable image for "${plantName}".`,
+      `Unsplash returned no downloadable image for "${plantName}" (${variant}).`,
     );
   }
 
+  if (photo.id) {
+    usedPhotoIds.add(photo.id);
+  }
+
+  await registerUnsplashDownload(photo);
   await downloadImage(imageUrl, outputPath);
 
   return {
@@ -190,6 +236,43 @@ async function generateImage(plantName, outputPath) {
     photographer: photo.user?.name || "Unknown photographer",
     photoUrl: photo.links?.html || photo.urls?.regular,
   };
+}
+
+async function generatePlantImages(plantName, slug) {
+  const plantImagesDir = path.join(IMAGES_ROOT, slug);
+  fs.mkdirSync(plantImagesDir, { recursive: true });
+  const usedPhotoIds = new Set();
+
+  const variants = [
+    { key: "hero", fileName: `${slug}.jpg` },
+    { key: "seed", fileName: `${slug}_seed.jpg` },
+    { key: "sprout", fileName: `${slug}_sprout.jpg` },
+    { key: "mature", fileName: `${slug}_mature.jpg` },
+    { key: "flower", fileName: `${slug}_flower.jpg` },
+    { key: "harvest", fileName: `${slug}_harvest.jpg` },
+  ];
+
+  const results = {};
+
+  for (const variant of variants) {
+    const outputPath = path.join(plantImagesDir, variant.fileName);
+    const imageInfo = await generateImage(
+      plantName,
+      variant.key,
+      outputPath,
+      usedPhotoIds,
+    );
+
+    results[variant.key] = {
+      path: outputPath,
+      ...imageInfo,
+    };
+
+    console.log(`Saved ${variant.key} image: ${outputPath}`);
+    console.log(`Photo credit: ${imageInfo.photographer}`);
+  }
+
+  return results;
 }
 
 async function main() {
@@ -204,18 +287,16 @@ async function main() {
   const plantName = process.argv.slice(2).join(" ").trim() || DEFAULT_PLANT;
   const slug = slugify(plantName) || "plant";
 
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(IMAGES_ROOT, { recursive: true });
+  fs.mkdirSync(DESCRIPTIONS_ROOT, { recursive: true });
 
-  const descriptionPath = path.join(OUTPUT_DIR, `${slug}_description.txt`);
-  const imagePath = path.join(OUTPUT_DIR, `${slug}_image.png`);
+  const descriptionPath = path.join(DESCRIPTIONS_ROOT, `${slug}.md`);
 
   console.log(`Testing Gemini with plant: ${plantName}`);
 
   try {
-    console.log("Generating image...");
-    const imageInfo = await generateImage(plantName, imagePath);
-    console.log(`Image saved to: ${imagePath}`);
-    console.log(`Photo credit: ${imageInfo.photographer}`);
+    console.log("Generating images...");
+    await generatePlantImages(plantName, slug);
 
     console.log("Generating description...");
     const description = await generateDescription(plantName);

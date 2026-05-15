@@ -59,7 +59,7 @@ The script expects files to be organized in specific locations:
 
 ## testGeminiPlant.js
 
-Generate a short plant description with Gemini and download a matching plant photo from Unsplash.
+Generate a short plant description with Gemini and download a matching plant photo set from Unsplash.
 
 ### Usage
 
@@ -75,6 +75,7 @@ node scripts/testGeminiPlant.js monstera deliciosa
 
 ### Output
 
-- Writes a short description to `scripts/gemini-output/<plant>-description.txt`
-- Writes the downloaded image to `scripts/gemini-output/<plant>-image.png`
+- Writes a short description to `public/descriptions/<plant>.md`
+- Writes the hero image to `public/images/details/<plant>/<plant>.jpg`
+- Writes lifecycle images to `public/images/details/<plant>/<plant>_seed.jpg`, `_sprout.jpg`, `_mature.jpg`, `_flower.jpg`, and `_harvest.jpg`
 - Requires `GEMINI_API_KEY` and `UNSPLASH_ACCESS_KEY` in your environment
