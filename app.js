@@ -616,6 +616,12 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
     if (req.body.nickname !== undefined) {
       updates.nickname = req.body.nickname;
     }
+    if (req.body.intervalDays !== undefined) {
+      updates.intervalDays = req.body.intervalDays;
+    }
+    if (req.body.waterFreq !== undefined) {
+      updates.waterFreq = req.body.waterFreq;
+    }
     if (req.body.imageUrl !== undefined) {
       updates.imageUrl = req.body.imageUrl;
     }
