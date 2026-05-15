@@ -318,6 +318,7 @@ app.post("/signup", async (req, res) => {
 
 // Render the profile page
 //added more to it shivika for profile page
+
 app.get("/profile", requiredLogin, async (req, res) => {
   try {
     const user = await userCollection.findOne({ email: req.session.email });
@@ -330,6 +331,30 @@ app.get("/profile", requiredLogin, async (req, res) => {
     console.error(err);
     res.status(500).send("Server error");
   }
+});
+
+// should hangle allowing user to change password option is avaiable in the profile
+// got help from youtube: https://youtu.be/AzA_LTDoFqY
+//by shivika
+app.post("/change-password", requiredLogin, async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (newPassword !== confirmPassword) {
+    const user = await userCollection.findOne({ email: req.session.email });
+    return res.render("profile.ejs", { user, name: req.session.username, error: "New passwords do not match." });
+  }
+
+  const user = await userCollection.findOne({ email: req.session.email });
+  const valid = await bcrypt.compare(currentPassword, user.password);
+
+  if (!valid) {
+    return res.render("profile.ejs", { user, name: req.session.username, error: "Current password is incorrect." });
+  }
+
+  const hashed = await bcrypt.hash(newPassword, saltRounds);
+  await userCollection.updateOne({ email: req.session.email }, { $set: { password: hashed } });
+
+  res.redirect("/profile");
 });
 
 //   Render the community page — fetch 5 random posts from MongoDB

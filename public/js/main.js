@@ -130,15 +130,6 @@ function createPlantCard(plant) {
     }
   }
 
-  // Determine shade state
-  let isInShade = false;
-  if (plant.movedToShadeAt) {
-    const shadeTime = new Date(plant.movedToShadeAt).getTime();
-    if (now - shadeTime < 8 * 60 * 60 * 1000) {
-      isInShade = true;
-    }
-  }
-
   // Look up plant type info from loaded database data
   const plantTypeInfo =
     availablePlantTypes.find((p) => p.name === speciesName) || {};
@@ -195,7 +186,7 @@ function createPlantCard(plant) {
   const isTooHot =
     typeof window.currentTemperature !== "undefined" &&
     window.currentTemperature > maxTemp;
-  const showSunAlert = isTooHot && !isInShade;
+  const showSunAlert = isTooHot;
 
   // Use user-uploaded image or default
   const plantImageUrl = plant.imageUrl || getDefaultPlantImage(plant.species);
@@ -207,14 +198,7 @@ function createPlantCard(plant) {
   const waterBadgeText = isWatered ? "✓ Watered" : "💧 Needs Water";
   const waterBadgeHTML = `<span class="${waterBadgeClass}" id="water-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">${waterBadgeText}</span>`;
 
-  let sunBadgeHTML = "";
-  if (showSunAlert) {
-    sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">☀️ Too Hot!</span>`;
-  } else if (isInShade) {
-    sunBadgeHTML = `<span class="badge-notify badge-sun resolved" id="sun-badge-${plant.id}" data-plant-id="${plant.id}">✓ In Shade</span>`;
-  } else {
-    sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist" style="display: none;">☀️ Too Hot!</span>`;
-  }
+  let sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" style="display: ${showSunAlert ? "" : "none"};">☀️</span>`;
 
   let harvestBadgeHTML = "";
   if (isEdible) {
@@ -288,14 +272,6 @@ function createPlantCard(plant) {
             <label for="check-water-${plant.id}">Water the Plant</label>
             <span class="freq-tag">${displayFreq}</span>
           </div>
-          
-          <!-- Move to Shade Checklist (conditional) -->
-          <div class="checklist-item shade-item" id="shade-item-${plant.id}" style="${isTooHot || isInShade ? "" : "display: none;"}">
-            <input type="checkbox" class="shade-checkbox" id="check-shade-${plant.id}" ${isInShade ? "checked" : ""} />
-            <label for="check-shade-${plant.id}">Move the Plant into Shade</label>
-            <span class="freq-tag">8hr cooldown</span>
-          </div>
-          
           
           <!-- Misting Checklist (conditional) -->
           <div class="checklist-item misting-item" id="misting-item-${plant.id}" style="${needsMisting ? "" : "display: none;"}">
@@ -404,30 +380,6 @@ function createPlantCard(plant) {
         } else {
           badge.classList.remove("resolved");
           badge.textContent = "💧 Needs Water";
-        }
-      }
-    });
-  }
-
-  // --- Event: Shade checkbox ---
-  // Adopted from AI
-  // Modified by: Harun Yaprak
-  const shadeCheckbox = card.querySelector(".shade-checkbox");
-  if (shadeCheckbox) {
-    shadeCheckbox.addEventListener("change", (e) => {
-      updatePlantShadeState(plant.id, e.target.checked);
-      const badge = card.querySelector(`#sun-badge-${plant.id}`);
-      if (badge) {
-        const maxTemp = getPlantMaxTemp(plant.species);
-        const isCurrentlyHot =
-          typeof window.currentTemperature !== "undefined" &&
-          window.currentTemperature > maxTemp;
-        if (e.target.checked) {
-          badge.classList.add("resolved");
-          badge.textContent = "✓ In Shade";
-        } else if (isCurrentlyHot) {
-          badge.classList.remove("resolved");
-          badge.textContent = "☀️ Too Hot!";
         }
       }
     });
@@ -598,13 +550,6 @@ async function updateTemperatureAlerts() {
   const plants = await loadPlants();
   const now = Date.now();
   plants.forEach((plant) => {
-    let isInShade = false;
-    if (plant.movedToShadeAt) {
-      const shadeTime = new Date(plant.movedToShadeAt).getTime();
-      if (now - shadeTime < 8 * 60 * 60 * 1000) {
-        isInShade = true;
-      }
-    }
     const plantTypeInfo =
       availablePlantTypes.find((p) => p.name === plant.species) || {};
     const maxTemp = plantTypeInfo.temp || 25;
@@ -613,23 +558,7 @@ async function updateTemperatureAlerts() {
     // Toggle Sun Badge
     const sunBadge = document.getElementById(`sun-badge-${plant.id}`);
     if (sunBadge) {
-      if (isTooHot && !isInShade) {
-        sunBadge.style.display = "";
-        sunBadge.classList.remove("resolved");
-        sunBadge.textContent = "☀️ Too Hot!";
-      } else if (isInShade) {
-        sunBadge.style.display = "";
-        sunBadge.classList.add("resolved");
-        sunBadge.textContent = "✓ In Shade";
-      } else {
-        sunBadge.style.display = "none";
-      }
-    }
-
-    // Toggle Shade Checklist Item
-    const shadeItem = document.getElementById(`shade-item-${plant.id}`);
-    if (shadeItem) {
-      shadeItem.style.display = isTooHot || isInShade ? "" : "none";
+      sunBadge.style.display = isTooHot ? "" : "none";
     }
   });
 }

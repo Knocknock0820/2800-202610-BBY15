@@ -6,6 +6,9 @@ npm install bcrypt
 npm install joi
 npm install marked
 
+npm install @google/generative-ai
+npm install unsplash-js node-fetch@2
+
 // These are the packages needed to run the community page.
 // If you are running this for the first time, you need to install these packages.
 npm install cloudinary
