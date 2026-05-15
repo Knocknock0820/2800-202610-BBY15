@@ -16,7 +16,7 @@ function slugify(value) {
   return value
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^a-z0-9]+/g, "_")
     .replace(/^-+|-+$/g, "");
 }
 
@@ -206,8 +206,8 @@ async function main() {
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  const descriptionPath = path.join(OUTPUT_DIR, `${slug}-description.txt`);
-  const imagePath = path.join(OUTPUT_DIR, `${slug}-image.png`);
+  const descriptionPath = path.join(OUTPUT_DIR, `${slug}_description.txt`);
+  const imagePath = path.join(OUTPUT_DIR, `${slug}_image.png`);
 
   console.log(`Testing Gemini with plant: ${plantName}`);
 
