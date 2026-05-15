@@ -13,6 +13,7 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 //const upload = require("./middleware/upload"); //shivika added hehe
+const { ObjectId } = require("mongodb");
 
 const fs = require("fs"); // Built-in Node.js File System module
 const path = require("path"); // Built-in Path module
@@ -48,6 +49,10 @@ const postCollection = database
   .db(mongodb_user_database)
   .collection("community-posts");
 
+const userPlantCollection = database
+  .db(mongodb_user_database)
+  .collection("user-plants");
+
 // Load plant files and seed on startup
 (async () => {
   try {
@@ -59,7 +64,9 @@ const postCollection = database
       await seedPlants(plantCollection);
     } else {
       // Check if existing plants have the new 'slug' field
-      const hasSlug = await plantCollection.findOne({ slug: { $exists: true } });
+      const hasSlug = await plantCollection.findOne({
+        slug: { $exists: true },
+      });
       if (!hasSlug) {
         // Old format plants without slugs — drop and re-seed
         console.log("Old plant format detected (no slugs). Re-seeding...");
@@ -154,7 +161,7 @@ app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await plantCollection
       .find({})
-      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1 })
+      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1, mistingFreq: 1, harvestDays: 1 })
       .toArray();
     res.json(plants);
   } catch (err) {
@@ -414,6 +421,49 @@ app.post(
   },
 );
 
+// Adopted code from AI
+// Modified by: Harun Yaprak
+// Toggle like on a community post
+app.post("/community/like/:id", requiredLogin, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const username = req.session.username;
+
+    // Find the post
+    const post = await postCollection.findOne({ _id: new ObjectId(postId) });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Check if the user already liked it
+    const likes = post.likes || [];
+    const hasLiked = likes.includes(username);
+
+    let updateQuery;
+    if (hasLiked) {
+      // User liked it already, so unlike it (pull username)
+      updateQuery = { $pull: { likes: username } };
+    } else {
+      // User hasn't liked it, so like it (addToSet username)
+      updateQuery = { $addToSet: { likes: username } };
+    }
+
+    // Perform the update
+    await postCollection.updateOne({ _id: new ObjectId(postId) }, updateQuery);
+
+    // Calculate new like count
+    const newCount = hasLiked ? likes.length - 1 : likes.length + 1;
+
+    res.json({
+      likedByUser: !hasLiked,
+      likesCount: newCount,
+    });
+  } catch (err) {
+    console.error("Error toggling like:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Upload plant image to Cloudinary
 // Modified by: Harun Yaprak
 app.post(
@@ -487,6 +537,205 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
   } catch (err) {
     console.error("Error fetching plant details:", err);
     res.status(500).render("404");
+  }
+});
+
+// store users plants in the database
+// BY Justin with AI help.
+app.post("/api/user/plants", requiredLogin, async (req, res) => {
+  try {
+    const plant = req.body;
+
+    const newPlant = {
+      id: plant.id, // IMPORTANT: keep frontend ID
+      userEmail: req.session.email,
+      username: req.session.username,
+
+      species: plant.species,
+      slug: plant.slug,
+      nickname: plant.nickname || "",
+      waterFreq: plant.waterFreq,
+      intervalDays: plant.intervalDays,
+
+      imageUrl: plant.imageUrl || null,
+      lastWateredAt: plant.lastWateredAt || null,
+      movedToShadeAt: null,
+      lastMistedAt: plant.lastMistedAt || null,
+      lastRotatedAt: plant.lastRotatedAt || null,
+      lastHarvestedAt: plant.lastHarvestedAt || null,
+
+      addedAt: plant.addedAt || new Date().toISOString(),
+    };
+
+    await userPlantCollection.insertOne(newPlant);
+
+    res.json({ success: true, plant: newPlant });
+  } catch (err) {
+    console.error("Save plant error:", err);
+    res.status(500).json({ error: "Failed to save plant" });
+  }
+});
+
+// Update a user plant record
+app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
+    const updates = {};
+
+    if (req.body.lastWateredAt !== undefined) {
+      updates.lastWateredAt = req.body.lastWateredAt;
+    }
+    if (req.body.movedToShadeAt !== undefined) {
+      updates.movedToShadeAt = req.body.movedToShadeAt;
+    }
+    if (req.body.nickname !== undefined) {
+      updates.nickname = req.body.nickname;
+    }
+    if (req.body.imageUrl !== undefined) {
+      updates.imageUrl = req.body.imageUrl;
+    }
+    if (req.body.lastMistedAt !== undefined) {
+      updates.lastMistedAt = req.body.lastMistedAt;
+    }
+    if (req.body.lastRotatedAt !== undefined) {
+      updates.lastRotatedAt = req.body.lastRotatedAt;
+    }
+    if (req.body.lastHarvestedAt !== undefined) {
+      updates.lastHarvestedAt = req.body.lastHarvestedAt;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res
+        .status(400)
+        .json({ error: "No valid fields provided for update" });
+    }
+
+    await userPlantCollection.updateOne(
+      { id: plantId, userEmail: req.session.email },
+      { $set: updates },
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Update plant error:", err);
+    res.status(500).json({ error: "Failed to update plant" });
+  }
+});
+
+//fetch the users plants stored in the databse
+//by Justin with AI help
+app.get("/api/user/plants", requiredLogin, async (req, res) => {
+  try {
+    const plants = await userPlantCollection
+      .find({ userEmail: req.session.email })
+      .toArray();
+
+    res.json(plants);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load plants" });
+  }
+});
+
+//delete user plants from database.
+app.delete("/api/user/plants/:id", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
+
+    await userPlantCollection.deleteOne({
+      id: plantId,
+      userEmail: req.session.email,
+    });
+
+    res.json({
+      success: true,
+    });
+  } catch (err) {
+    console.error("Delete error:", err);
+
+    res.status(500).json({
+      error: "Failed to delete plant",
+    });
+  }
+});
+
+//watering save in database.
+//Justin with AI help.
+app.patch("/api/user/plants/:id/water", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
+
+    await userPlantCollection.updateOne(
+      {
+        id: plantId,
+        userEmail: req.session.email,
+      },
+      {
+        $set: {
+          lastWateredAt: req.body.lastWateredAt,
+        },
+      },
+    );
+
+    res.json({
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      error: "Failed to update plant",
+    });
+  }
+});
+
+//handle shade to database
+//justin with Ai
+app.patch("/api/user/plants/:id/shade", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
+
+    await userPlantCollection.updateOne(
+      {
+        id: plantId,
+        userEmail: req.session.email,
+      },
+      {
+        $set: {
+          movedToShadeAt: req.body.movedToShadeAt,
+        },
+      },
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update shade state" });
+  }
+});
+
+//store images into database
+//justin with AI
+app.patch("/api/user/plants/:id/image", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
+
+    await userPlantCollection.updateOne(
+      {
+        id: plantId,
+        userEmail: req.session.email,
+      },
+      {
+        $set: {
+          imageUrl: req.body.imageUrl,
+        },
+      },
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Image update error:", err);
+    res.status(500).json({ error: "Failed to update image" });
   }
 });
 
