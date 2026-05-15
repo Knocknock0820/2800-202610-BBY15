@@ -13,6 +13,7 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 //const upload = require("./middleware/upload"); //shivika added hehe
+const { ObjectId } = require("mongodb");
 
 const fs = require("fs"); // Built-in Node.js File System module
 const path = require("path"); // Built-in Path module
@@ -63,7 +64,9 @@ const userPlantCollection = database
       await seedPlants(plantCollection);
     } else {
       // Check if existing plants have the new 'slug' field
-      const hasSlug = await plantCollection.findOne({ slug: { $exists: true } });
+      const hasSlug = await plantCollection.findOne({
+        slug: { $exists: true },
+      });
       if (!hasSlug) {
         // Old format plants without slugs — drop and re-seed
         console.log("Old plant format detected (no slugs). Re-seeding...");
@@ -418,6 +421,49 @@ app.post(
   },
 );
 
+// Adopted code from AI
+// Modified by: Harun Yaprak
+// Toggle like on a community post
+app.post("/community/like/:id", requiredLogin, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const username = req.session.username;
+
+    // Find the post
+    const post = await postCollection.findOne({ _id: new ObjectId(postId) });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Check if the user already liked it
+    const likes = post.likes || [];
+    const hasLiked = likes.includes(username);
+
+    let updateQuery;
+    if (hasLiked) {
+      // User liked it already, so unlike it (pull username)
+      updateQuery = { $pull: { likes: username } };
+    } else {
+      // User hasn't liked it, so like it (addToSet username)
+      updateQuery = { $addToSet: { likes: username } };
+    }
+
+    // Perform the update
+    await postCollection.updateOne({ _id: new ObjectId(postId) }, updateQuery);
+
+    // Calculate new like count
+    const newCount = hasLiked ? likes.length - 1 : likes.length + 1;
+
+    res.json({
+      likedByUser: !hasLiked,
+      likesCount: newCount,
+    });
+  } catch (err) {
+    console.error("Error toggling like:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Upload plant image to Cloudinary
 // Modified by: Harun Yaprak
 app.post(
@@ -547,7 +593,9 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
     }
 
     if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: "No valid fields provided for update" });
+      return res
+        .status(400)
+        .json({ error: "No valid fields provided for update" });
     }
 
     await userPlantCollection.updateOne(
@@ -562,7 +610,7 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
   }
 });
 
-//fetch the users plants stored in the databse 
+//fetch the users plants stored in the databse
 //by Justin with AI help
 app.get("/api/user/plants", requiredLogin, async (req, res) => {
   try {
@@ -601,37 +649,33 @@ app.delete("/api/user/plants/:id", requiredLogin, async (req, res) => {
 
 //watering save in database.
 //Justin with AI help.
-app.patch(
-  "/api/user/plants/:id/water",
-  requiredLogin,
-  async (req, res) => {
-    try {
-      const plantId = Number(req.params.id);
+app.patch("/api/user/plants/:id/water", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
 
-      await userPlantCollection.updateOne(
-        {
-          id: plantId,
-          userEmail: req.session.email,
+    await userPlantCollection.updateOne(
+      {
+        id: plantId,
+        userEmail: req.session.email,
+      },
+      {
+        $set: {
+          lastWateredAt: req.body.lastWateredAt,
         },
-        {
-          $set: {
-            lastWateredAt: req.body.lastWateredAt,
-          },
-        },
-      );
+      },
+    );
 
-      res.json({
-        success: true,
-      });
-    } catch (err) {
-      console.error(err);
+    res.json({
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
 
-      res.status(500).json({
-        error: "Failed to update plant",
-      });
-    }
-  },
-);
+    res.status(500).json({
+      error: "Failed to update plant",
+    });
+  }
+});
 
 //handle shade to database
 //justin with Ai
@@ -648,7 +692,7 @@ app.patch("/api/user/plants/:id/shade", requiredLogin, async (req, res) => {
         $set: {
           movedToShadeAt: req.body.movedToShadeAt,
         },
-      }
+      },
     );
 
     res.json({ success: true });
@@ -673,7 +717,7 @@ app.patch("/api/user/plants/:id/image", requiredLogin, async (req, res) => {
         $set: {
           imageUrl: req.body.imageUrl,
         },
-      }
+      },
     );
 
     res.json({ success: true });
