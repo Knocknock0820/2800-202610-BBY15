@@ -830,15 +830,15 @@ async function savePlant() {
 /* -------------------------------------------------------
    6. EDIT PLANT MODAL
    Opens a modal pre-populated with the plant's current
-   nickname and water needs. On save, PATCHes the
+   nickname and water frequency. On save, PATCHes the
    record and re-renders the plant list.
 ------------------------------------------------------- */
- 
+
 function openEditModal(plant) {
   // Pre-populate fields
   document.getElementById("editPlantId").value = plant.id;
   document.getElementById("editPlantNickname").value = plant.nickname || "";
- 
+
   // Resolve current interval days
   let currentDays = plant.intervalDays;
   if (!currentDays) {
@@ -847,32 +847,32 @@ function openEditModal(plant) {
       : getIntervalDays(plant.waterFreq);
   }
   document.getElementById("editPlantWaterFreq").value = currentDays || 7;
- 
+
   // Open modal
   const modalEl = document.getElementById("editPlantModal");
   const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
   modal.show();
 }
- 
+
 async function saveEditPlant() {
   const id = document.getElementById("editPlantId").value;
   const nickname = document.getElementById("editPlantNickname").value.trim();
   const freqInput = document.getElementById("editPlantWaterFreq").value;
   const intervalDays = parseInt(freqInput, 10);
- 
+
   if (!id) return;
- 
+
   if (isNaN(intervalDays) || intervalDays < 1) {
     document.getElementById("editPlantWaterFreq").focus();
     return;
   }
- 
+
   const btnEditSave = document.getElementById("btnEditSave");
   const originalText = btnEditSave.innerHTML;
   btnEditSave.innerHTML =
     '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
   btnEditSave.disabled = true;
- 
+
   try {
     const response = await fetch(`/api/user/plants/${id}`, {
       method: "PUT",
@@ -883,14 +883,14 @@ async function saveEditPlant() {
         waterFreq: intervalDays,
       }),
     });
- 
+
     if (!response.ok) throw new Error("Failed to update plant");
- 
+
     // Close modal
     const modalEl = document.getElementById("editPlantModal");
     const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     modal.hide();
- 
+
     await renderPlants();
   } catch (err) {
     console.error("Error updating plant:", err);
@@ -962,12 +962,12 @@ function initModal() {
 
   // Save button persists the plant
   document.getElementById("btnSave").addEventListener("click", savePlant);
-}
 
-// Edit modal save button
-const btnEditSave = document.getElementById("btnEditSave");
-if (btnEditSave) {
-  btnEditSave.addEventListener("click", saveEditPlant);
+  // Edit modal save button
+  const btnEditSave = document.getElementById("btnEditSave");
+  if (btnEditSave) {
+    btnEditSave.addEventListener("click", saveEditPlant);
+  }
 }
 
 /* -------------------------------------------------------
