@@ -964,6 +964,12 @@ function initModal() {
   document.getElementById("btnSave").addEventListener("click", savePlant);
 }
 
+// Edit modal save button
+const btnEditSave = document.getElementById("btnEditSave");
+if (btnEditSave) {
+  btnEditSave.addEventListener("click", saveEditPlant);
+}
+
 /* -------------------------------------------------------
    INIT — run everything once the DOM is ready
 ------------------------------------------------------- */
