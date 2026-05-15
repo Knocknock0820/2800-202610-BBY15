@@ -47,6 +47,8 @@ const defaultPlants = [
     slug: "monstera",
     waterFreq: 7, // days between watering
     temp: 28, // comfortable max temp in °C
+    mistingFreq: 3, // days between misting
+    harvestDays: 120, // days until harvest
     difficulty: "Easy",
     heroImage: null,
     images: {
@@ -60,11 +62,11 @@ const defaultPlants = [
   },
   { name: "Snake Plant", slug: "snake_plant", waterFreq: 30, temp: 35 },
   { name: "Cactus", slug: "cactus", waterFreq: 14, temp: 40 },
-  { name: "Peace Lily", slug: "peace_lily", waterFreq: 3, temp: 30 },
-  { name: "Spider Plant", slug: "spider_plant", waterFreq: 7, temp: 32 },
-  { name: "Pothos", slug: "pothos", waterFreq: 10, temp: 32 },
-  { name: "Aloe Vera", slug: "aloe_vera", waterFreq: 21, temp: 35 },
-  { name: "Rubber Tree", slug: "rubber_tree", waterFreq: 14, temp: 32 },
+  { name: "Peace Lily", slug: "peace_lily", waterFreq: 3, temp: 30, mistingFreq: 2 },
+  { name: "Spider Plant", slug: "spider_plant", waterFreq: 7, temp: 32, mistingFreq: 4 },
+  { name: "Pothos", slug: "pothos", waterFreq: 10, temp: 32, mistingFreq: 4 },
+  { name: "Aloe Vera", slug: "aloe_vera", waterFreq: 21, temp: 35, harvestDays: 60 },
+  { name: "Rubber Tree", slug: "rubber_tree", waterFreq: 14, temp: 32, mistingFreq: 7 },
 ];
 
 // Load plant data from files

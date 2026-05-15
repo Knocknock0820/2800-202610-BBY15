@@ -138,8 +138,12 @@ function createPlantCard(plant) {
     }
   }
 
+  // Look up plant type info from loaded database data
+  const plantTypeInfo =
+    availablePlantTypes.find((p) => p.name === speciesName) || {};
+
   // Determine misting state (conditional)
-  const mistingFreq = getPlantMistingFreq(speciesName);
+  const mistingFreq = plantTypeInfo.mistingFreq || null;
   const needsMisting = mistingFreq !== null;
   let isMisted = false;
   if (needsMisting && plant.lastMistedAt) {
@@ -160,7 +164,7 @@ function createPlantCard(plant) {
   }
 
   // Determine harvest state
-  const harvestDays = getPlantHarvestDays(speciesName);
+  const harvestDays = plantTypeInfo.harvestDays || null;
   const isEdible = harvestDays !== null;
   let isReadyToHarvest = false;
   let isHarvested = false;
@@ -185,7 +189,7 @@ function createPlantCard(plant) {
     }
   }
 
-  const maxTemp = getPlantMaxTemp(plant.species);
+  const maxTemp = plantTypeInfo.temp || 25;
   const isTooHot =
     typeof window.currentTemperature !== "undefined" &&
     window.currentTemperature > maxTemp;
@@ -525,57 +529,29 @@ async function updatePlantShadeState(id, inShade) {
 }
 
 // Update the misted state of a plant
-function updatePlantMistedState(id, isMisted) {
-  const plants = loadPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    plants[index].lastMistedAt = isMisted ? new Date().toISOString() : null;
-    savePlants(plants);
-  }
+async function updatePlantMistedState(id, isMisted) {
+  await updatePlant(id, {
+    lastMistedAt: isMisted ? new Date().toISOString() : null,
+  });
 }
 
 // Update the rotated state of a plant
-function updatePlantRotatedState(id, isRotated) {
-  const plants = loadPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    plants[index].lastRotatedAt = isRotated ? new Date().toISOString() : null;
-    savePlants(plants);
-  }
+async function updatePlantRotatedState(id, isRotated) {
+  await updatePlant(id, {
+    lastRotatedAt: isRotated ? new Date().toISOString() : null,
+  });
 }
 
-// Helper to determine misting frequency for tropical plants
-function getPlantMistingFreq(species) {
-  const mistingMap = {
-    Monstera: 3,
-    "Peace Lily": 2,
-    "Spider Plant": 4,
-    Pothos: 4,
-    "Rubber Tree": 7,
-  };
-  return mistingMap[species] !== undefined ? mistingMap[species] : null;
-}
+// Helper function removed - using DB values
 
 // Update the harvested state of a plant
-function updatePlantHarvestedState(id, isHarvested) {
-  const plants = loadPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    plants[index].lastHarvestedAt = isHarvested
-      ? new Date().toISOString()
-      : null;
-    savePlants(plants);
-  }
+async function updatePlantHarvestedState(id, isHarvested) {
+  await updatePlant(id, {
+    lastHarvestedAt: isHarvested ? new Date().toISOString() : null,
+  });
 }
 
-// Check if a plant is edible and how long until harvest
-function getPlantHarvestDays(species) {
-  const harvestMap = {
-    Monstera: 120, // Fruit takes time to ripen
-    "Aloe Vera": 60, // Good to harvest leaves after 60 days
-  };
-  return harvestMap[species] !== undefined ? harvestMap[species] : null;
-}
+// Helper function removed - using DB values
 
 function getIntervalDays(freqStr) {
   if (!freqStr || typeof freqStr !== "string") return 7;
@@ -590,17 +566,7 @@ function getIntervalDays(freqStr) {
   return 7; // default to 1 week
 }
 
-// After we implement plant database, we can remove this function and just get the data from the database
-// Currently used to get max temperature tolerance for a plant species
-function getPlantMaxTemp(species) {
-  if (!availablePlantTypes || !availablePlantTypes.length) return 30;
-  // Try to find by name or slug
-  const found = availablePlantTypes.find(
-    (p) => p.name === species || p.slug === species,
-  );
-  if (found && typeof found.temp === "number") return found.temp;
-  return 30; // sensible default
-}
+// Helper function removed - using DB values
 
 // Update temperature alerts for all rendered cards dynamically
 // Adapted from AI, used to show temperature alerts for plants
@@ -617,7 +583,9 @@ async function updateTemperatureAlerts() {
         isInShade = true;
       }
     }
-    const maxTemp = getPlantMaxTemp(plant.species);
+    const plantTypeInfo =
+      availablePlantTypes.find((p) => p.name === plant.species) || {};
+    const maxTemp = plantTypeInfo.temp || 25;
     const isTooHot = window.currentTemperature > maxTemp;
 
     // Toggle Sun Badge
@@ -675,8 +643,6 @@ async function renderPlants() {
 
 // Selected file reference for upload
 let selectedPlantImageFile = null;
-
-
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
@@ -766,7 +732,6 @@ async function savePlant() {
 
   try {
     const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
-   
 
     let imageUrl = null;
 
@@ -814,13 +779,13 @@ async function savePlant() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-    },
+      },
       body: JSON.stringify(newPlant),
     });
 
-if (!response.ok) {
-  throw new Error("Failed to save plant");
-}
+    if (!response.ok) {
+      throw new Error("Failed to save plant");
+    }
 
     // Close the bootstrap modal
     const modalEl = document.getElementById("addPlantModal");
@@ -890,8 +855,6 @@ function navigateGuide(direction) {
 }
 
 function initModal() {
-  fetchPlantTypes();
-
   // Clear modal inputs when it's about to be shown
   const modalEl = document.getElementById("addPlantModal");
   if (modalEl) {
@@ -912,6 +875,7 @@ function initModal() {
 ------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   await loadWeather();
+  await fetchPlantTypes(); // Must load plant attributes before rendering cards
   await renderPlants(); // render saved plants on page load
   initModal(); // wire up the add-plant modal
 });

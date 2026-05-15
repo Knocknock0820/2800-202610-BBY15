@@ -158,7 +158,7 @@ app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await plantCollection
       .find({})
-      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1 })
+      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1, mistingFreq: 1, harvestDays: 1 })
       .toArray();
     res.json(plants);
   } catch (err) {
@@ -514,6 +514,9 @@ app.post("/api/user/plants", requiredLogin, async (req, res) => {
       imageUrl: plant.imageUrl || null,
       lastWateredAt: plant.lastWateredAt || null,
       movedToShadeAt: null,
+      lastMistedAt: plant.lastMistedAt || null,
+      lastRotatedAt: plant.lastRotatedAt || null,
+      lastHarvestedAt: plant.lastHarvestedAt || null,
 
       addedAt: plant.addedAt || new Date().toISOString(),
     };
@@ -544,6 +547,15 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
     }
     if (req.body.imageUrl !== undefined) {
       updates.imageUrl = req.body.imageUrl;
+    }
+    if (req.body.lastMistedAt !== undefined) {
+      updates.lastMistedAt = req.body.lastMistedAt;
+    }
+    if (req.body.lastRotatedAt !== undefined) {
+      updates.lastRotatedAt = req.body.lastRotatedAt;
+    }
+    if (req.body.lastHarvestedAt !== undefined) {
+      updates.lastHarvestedAt = req.body.lastHarvestedAt;
     }
 
     if (Object.keys(updates).length === 0) {
