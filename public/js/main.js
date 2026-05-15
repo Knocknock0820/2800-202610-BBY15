@@ -123,7 +123,8 @@ function createPlantCard(plant) {
   let isWatered = false;
   if (plant.lastWateredAt) {
     const last = new Date(plant.lastWateredAt).getTime();
-    const intervalMs = (plant.intervalDays || 7) * 24 * 60 * 60 * 1000;
+    const intervalDays = plant.intervalDays || (typeof plant.waterFreq === 'number' ? plant.waterFreq : getIntervalDays(plant.waterFreq)) || 7;
+    const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
     if (now - last < intervalMs) {
       isWatered = true;
     }
@@ -232,10 +233,8 @@ function createPlantCard(plant) {
     : "";
 
   // Format water frequency if it's just a number
-  let displayFreq = plant.waterFreq || "Weekly";
-  if (!isNaN(displayFreq) && displayFreq.toString().trim() !== "") {
-    displayFreq = displayFreq == 1 ? "Every day" : `Every ${displayFreq} days`;
-  }
+  const resolvedDays = plant.intervalDays || (typeof plant.waterFreq === 'number' ? plant.waterFreq : getIntervalDays(plant.waterFreq)) || 7;
+  let displayFreq = resolvedDays == 1 ? "Every day" : `Every ${resolvedDays} days`;
 
   wrapper.innerHTML = `
     <div class="plant-card" data-plant-id="${plant.id}">
