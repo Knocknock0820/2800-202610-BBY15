@@ -593,7 +593,9 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
     }
 
     if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: "No valid fields provided for update" });
+      return res
+        .status(400)
+        .json({ error: "No valid fields provided for update" });
     }
 
     await userPlantCollection.updateOne(
@@ -608,7 +610,7 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
   }
 });
 
-//fetch the users plants stored in the databse 
+//fetch the users plants stored in the databse
 //by Justin with AI help
 app.get("/api/user/plants", requiredLogin, async (req, res) => {
   try {
@@ -647,37 +649,33 @@ app.delete("/api/user/plants/:id", requiredLogin, async (req, res) => {
 
 //watering save in database.
 //Justin with AI help.
-app.patch(
-  "/api/user/plants/:id/water",
-  requiredLogin,
-  async (req, res) => {
-    try {
-      const plantId = Number(req.params.id);
+app.patch("/api/user/plants/:id/water", requiredLogin, async (req, res) => {
+  try {
+    const plantId = Number(req.params.id);
 
-      await userPlantCollection.updateOne(
-        {
-          id: plantId,
-          userEmail: req.session.email,
+    await userPlantCollection.updateOne(
+      {
+        id: plantId,
+        userEmail: req.session.email,
+      },
+      {
+        $set: {
+          lastWateredAt: req.body.lastWateredAt,
         },
-        {
-          $set: {
-            lastWateredAt: req.body.lastWateredAt,
-          },
-        },
-      );
+      },
+    );
 
-      res.json({
-        success: true,
-      });
-    } catch (err) {
-      console.error(err);
+    res.json({
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
 
-      res.status(500).json({
-        error: "Failed to update plant",
-      });
-    }
-  },
-);
+    res.status(500).json({
+      error: "Failed to update plant",
+    });
+  }
+});
 
 //handle shade to database
 //justin with Ai
@@ -694,7 +692,7 @@ app.patch("/api/user/plants/:id/shade", requiredLogin, async (req, res) => {
         $set: {
           movedToShadeAt: req.body.movedToShadeAt,
         },
-      }
+      },
     );
 
     res.json({ success: true });
@@ -719,7 +717,7 @@ app.patch("/api/user/plants/:id/image", requiredLogin, async (req, res) => {
         $set: {
           imageUrl: req.body.imageUrl,
         },
-      }
+      },
     );
 
     res.json({ success: true });

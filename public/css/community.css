@@ -58,8 +58,8 @@ body {
 /* ---------- SPROUT BUTTON STYLES ---------- */
 .btn-sprout-primary {
   background-color: #687d31;
-  color: #f2f1ee;
-  border: none;
+  color: #ffffff !important;
+  border: 1px solid #687d31;
   border-radius: 12px;
   padding: 10px 24px;
   font-weight: 600;
@@ -68,15 +68,15 @@ body {
 }
 
 .btn-sprout-primary:hover {
-  background-color: #7a9237;
-  color: #ffffff;
+  background-color: #687d311a;
+  color: #687d31 !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(104, 125, 49, 0.35);
 }
 
 .btn-outline-sprout {
-  color: #687d31;
-  border-color: rgba(104, 125, 49, 0.3);
+  color: #687d31 !important;
+  border-color: #687d31;
   border-radius: 8px;
   font-size: 0.8rem;
   padding: 4px 10px;
@@ -84,14 +84,14 @@ body {
 }
 
 .btn-outline-sprout:hover {
-  background-color: #687d31;
-  color: #f2f1ee;
+  background-color: #687d311a;
+  color: #687d31 !important;
   border-color: #687d31;
 }
 
 .btn-sprout-liked {
-  background-color: #687d31;
-  color: #f2f1ee;
+  background-color: #687d311a;
+  color: #687d31 !important;
   border: 1px solid #687d31;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -100,9 +100,26 @@ body {
 }
 
 .btn-sprout-liked:hover {
-  background-color: #556627;
-  color: #ffffff;
-  border-color: #556627;
+  background-color: #687d311a;
+  color: #687d31 !important;
+}
+
+.btn-outline-sprout:focus,
+.btn-outline-sprout:active {
+  border-color: #687d31 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: transparent !important;
+  color: #687d31 !important;
+}
+
+.btn-sprout-liked:focus,
+.btn-sprout-liked:active {
+  border-color: #687d31 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: #687d311a !important;
+  color: #687d31 !important;
 }
 
 /* ---------- ALBUM / CARD GRID ---------- */
@@ -203,7 +220,7 @@ body {
 /* ---------- BADGE TAG ---------- */
 .text-body-secondary {
   font-size: 0.78rem;
-  background-color: rgba(104, 125, 49, 0.1);
+  background-color: #687d311a;
   color: #687d31 !important;
   padding: 3px 10px;
   border-radius: 20px;
