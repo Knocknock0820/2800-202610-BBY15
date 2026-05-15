@@ -68,24 +68,22 @@ async function loadWeatherByIP() {
 
 /* -------------------------------------------------------
    2. PLANT STORAGE
-   Plants are stored in localStorage as a JSON array.
+   Plants are stored in database.
    Each plant object: { id, name, waterFreq, addedAt }
 ------------------------------------------------------- */
-
-const STORAGE_KEY = "users_plants";
-
-// Load the plant array from localStorage (empty array if nothing saved)
-function loadPlants() {
+async function loadPlants() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
+    const res = await fetch("/api/user/plants");
+
+    if (!res.ok) {
+      throw new Error("Failed to load plants");
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error(err);
     return [];
   }
-}
-
-// Persist the plant array back to localStorage
-function savePlants(plants) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(plants));
 }
 
 /* -------------------------------------------------------
@@ -366,13 +364,16 @@ function createPlantCard(plant) {
         if (!res.ok) throw new Error("Upload failed");
         const data = await res.json();
 
-        // Save imageUrl to localStorage
-        const plants = loadPlants();
-        const idx = plants.findIndex((p) => p.id === plant.id);
-        if (idx !== -1) {
-          plants[idx].imageUrl = data.imageUrl;
-          savePlants(plants);
-        }
+        // Save imageUrl to database
+        await fetch(`/api/user/plants/${plant.id}/image`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrl: data.imageUrl,
+          }),
+        });
 
         // Update image in DOM immediately
         const img = card.querySelector(".plant-img-wrapper img");
@@ -473,30 +474,54 @@ function createPlantCard(plant) {
 }
 
 // Remove a plant by id from storage and re-render the list
-function deletePlant(id) {
-  const plants = loadPlants().filter((p) => p.id !== id);
-  savePlants(plants);
-  renderPlants();
+async function deletePlant(id) {
+  try {
+    const response = await fetch(`/api/user/plants/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Delete failed");
+    }
+
+    await renderPlants();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete plant");
+  }
+}
+
+// Send a generic update to a user plant record
+async function updatePlant(id, updates) {
+  try {
+    const response = await fetch(`/api/user/plants/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update plant");
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 // Update the watering state of a plant
-function updatePlantWateredState(id, isWatered) {
-  const plants = loadPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    plants[index].lastWateredAt = isWatered ? new Date().toISOString() : null;
-    savePlants(plants);
-  }
+async function updatePlantWateredState(id, isWatered) {
+  await updatePlant(id, {
+    lastWateredAt: isWatered ? new Date().toISOString() : null,
+  });
 }
 
 // Update the shade state of a plant
-function updatePlantShadeState(id, inShade) {
-  const plants = loadPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    plants[index].movedToShadeAt = inShade ? new Date().toISOString() : null;
-    savePlants(plants);
-  }
+async function updatePlantShadeState(id, inShade) {
+  await updatePlant(id, {
+    movedToShadeAt: inShade ? new Date().toISOString() : null,
+  });
 }
 
 // Update the misted state of a plant
@@ -580,9 +605,9 @@ function getPlantMaxTemp(species) {
 // Update temperature alerts for all rendered cards dynamically
 // Adapted from AI, used to show temperature alerts for plants
 // Modified by: Harun Yaprak
-function updateTemperatureAlerts() {
+async function updateTemperatureAlerts() {
   if (typeof window.currentTemperature === "undefined") return;
-  const plants = loadPlants();
+  const plants = await loadPlants();
   const now = Date.now();
   plants.forEach((plant) => {
     let isInShade = false;
@@ -620,11 +645,11 @@ function updateTemperatureAlerts() {
 }
 
 // Render all plants from storage into #plantList
-function renderPlants() {
+async function renderPlants() {
   const list = document.getElementById("plantList");
   list.innerHTML = ""; // clear existing cards
 
-  const plants = loadPlants();
+  const plants = await loadPlants();
 
   if (plants.length === 0) {
     // Show a friendly empty state
@@ -650,6 +675,8 @@ function renderPlants() {
 
 // Selected file reference for upload
 let selectedPlantImageFile = null;
+
+
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
@@ -739,7 +766,7 @@ async function savePlant() {
 
   try {
     const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
-    const plants = loadPlants();
+   
 
     let imageUrl = null;
 
@@ -753,9 +780,14 @@ async function savePlant() {
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        imageUrl = data.imageUrl;
+      if (!res.ok) {
+        throw new Error("Image upload failed");
+      }
+
+      const data = await res.json();
+      imageUrl = data.imageUrl;
+      if (!imageUrl) {
+        throw new Error("Image upload response did not include imageUrl");
       }
     }
 
@@ -765,6 +797,7 @@ async function savePlant() {
       slug: selectedType.slug,
       nickname: nickname,
       waterFreq: selectedType.waterFreq,
+      imageUrl,
       intervalDays:
         typeof selectedType.waterFreq === "number"
           ? selectedType.waterFreq
@@ -777,8 +810,17 @@ async function savePlant() {
     };
 
     console.log("Saving new plant:", newPlant);
-    plants.push(newPlant);
-    savePlants(plants);
+    const response = await fetch("/api/user/plants", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+    },
+      body: JSON.stringify(newPlant),
+    });
+
+if (!response.ok) {
+  throw new Error("Failed to save plant");
+}
 
     // Close the bootstrap modal
     const modalEl = document.getElementById("addPlantModal");
@@ -868,8 +910,8 @@ function initModal() {
 /* -------------------------------------------------------
    INIT — run everything once the DOM is ready
 ------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  loadWeather();
-  renderPlants(); // render saved plants on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadWeather();
+  await renderPlants(); // render saved plants on page load
   initModal(); // wire up the add-plant modal
 });
