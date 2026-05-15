@@ -164,7 +164,8 @@ function createPlantCard(plant) {
   }
 
   // Determine harvest state
-  const harvestDays = plantTypeInfo.harvestDays || null;
+  const harvestDays =
+    plantTypeInfo.harvestDays !== undefined ? plantTypeInfo.harvestDays : null;
   const isEdible = harvestDays !== null;
   let isReadyToHarvest = false;
   let isHarvested = false;
@@ -311,8 +312,7 @@ function createPlantCard(plant) {
           <!-- Harvest Checklist (conditional) -->
           <div class="checklist-item harvest-item" id="harvest-item-${plant.id}" style="${isEdible && (isReadyToHarvest || isHarvested) ? "" : "display: none;"}">
           <input type="checkbox" class="harvest-checkbox" id="check-harvest-${plant.id}" ${isHarvested ? "checked" : ""} />
-            <label for="check-harvest-${plant.id}">Your Plant Might be Ready to Harvest!</label>
-            <span class="freq-tag">${harvestDays} days</span>
+            <label for="check-harvest-${plant.id}">${isHarvested ? "Plant Harvested!" : "Your Plant is Ready to Harvest!"}</label>
           </div>
         </div>
       </div>
@@ -453,13 +453,24 @@ function createPlantCard(plant) {
     harvestCheckbox.addEventListener("change", (e) => {
       updatePlantHarvestedState(plant.id, e.target.checked);
       const badge = card.querySelector(`#harvest-badge-${plant.id}`);
+      const label = card.querySelector(
+        `label[for="check-harvest-${plant.id}"]`,
+      );
       if (badge) {
         if (e.target.checked) {
+          badge.style.display = "";
           badge.classList.add("resolved");
           badge.textContent = "✓ Harvested";
+          if (label) label.textContent = "Plant Harvested!";
         } else {
           badge.classList.remove("resolved");
           badge.textContent = "🌾 Ready to Harvest";
+          if (label) label.textContent = "Your Plant is Ready to Harvest!";
+          if (!isReadyToHarvest) {
+            badge.style.display = "none";
+          } else {
+            badge.style.display = "";
+          }
         }
       }
     });
