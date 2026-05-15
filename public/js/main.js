@@ -112,10 +112,10 @@ function createPlantCard(plant) {
   const speciesName = plant.species || plant.name;
   const addedDate = plant.addedAt
     ? new Date(plant.addedAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
     : "Unknown date";
 
   // Determine watering state
@@ -270,6 +270,9 @@ function createPlantCard(plant) {
           <p class="card-date">Added ${addedDate}</p>
           <div class="card-actions">
             <a href="/details/${plant.slug || (plant.species || plant.name || "").toLowerCase().replace(/\s+/g, "_")}" class="btn-details">Details →</a>
+            <button class="btn-edit-card" data-id="${plant.id}" title="Edit plant">
+              <img src="/icons/edit.png" alt="Edit" />
+            </button>
             <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
               <img src="/icons/bin.png" alt="Delete" />
             </button>
@@ -430,7 +433,7 @@ function createPlantCard(plant) {
       }
     });
   }
-  
+
   // --- Event: Edit details button ---
   const editBtn = card.querySelector(".btn-edit-card");
   if (editBtn) {
