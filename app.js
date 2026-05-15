@@ -13,6 +13,7 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 //const upload = require("./middleware/upload"); //shivika added hehe
+const { ObjectId } = require("mongodb");
 
 const fs = require("fs"); // Built-in Node.js File System module
 const path = require("path"); // Built-in Path module
@@ -59,7 +60,9 @@ const postCollection = database
       await seedPlants(plantCollection);
     } else {
       // Check if existing plants have the new 'slug' field
-      const hasSlug = await plantCollection.findOne({ slug: { $exists: true } });
+      const hasSlug = await plantCollection.findOne({
+        slug: { $exists: true },
+      });
       if (!hasSlug) {
         // Old format plants without slugs — drop and re-seed
         console.log("Old plant format detected (no slugs). Re-seeding...");
@@ -413,6 +416,49 @@ app.post(
     }
   },
 );
+
+// Adopted code from AI
+// Modified by: Harun Yaprak
+// Toggle like on a community post
+app.post("/community/like/:id", requiredLogin, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const username = req.session.username;
+
+    // Find the post
+    const post = await postCollection.findOne({ _id: new ObjectId(postId) });
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Check if the user already liked it
+    const likes = post.likes || [];
+    const hasLiked = likes.includes(username);
+
+    let updateQuery;
+    if (hasLiked) {
+      // User liked it already, so unlike it (pull username)
+      updateQuery = { $pull: { likes: username } };
+    } else {
+      // User hasn't liked it, so like it (addToSet username)
+      updateQuery = { $addToSet: { likes: username } };
+    }
+
+    // Perform the update
+    await postCollection.updateOne({ _id: new ObjectId(postId) }, updateQuery);
+
+    // Calculate new like count
+    const newCount = hasLiked ? likes.length - 1 : likes.length + 1;
+
+    res.json({
+      likedByUser: !hasLiked,
+      likesCount: newCount,
+    });
+  } catch (err) {
+    console.error("Error toggling like:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // Upload plant image to Cloudinary
 // Modified by: Harun Yaprak

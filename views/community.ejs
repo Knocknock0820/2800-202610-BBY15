@@ -42,7 +42,7 @@
             <div class="col">
               <div class="card community-card shadow-sm">
                 <% if (post.imageUrl) { %>
-                  <img src="<%= post.imageUrl %>" class="card-img-top" alt="Community post photo" />
+                  <img src="<%= post.imageUrl %>" class="card-img-top post-image-clickable" alt="Community post photo" style="cursor: pointer;" data-image-url="<%= post.imageUrl %>" data-author="<%= post.username %>" data-caption="<%= post.caption || '' %>" />
                 <% } %>
                 <div class="card-body">
                   <div class="d-flex align-items-center mb-2">
@@ -74,7 +74,14 @@
                   <% } %>
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                      <button type="button" class="btn btn-sm btn-outline-sprout">❤️</button>
+                      <% 
+                        const likes = post.likes || [];
+                        const hasLiked = likes.includes(name);
+                        const btnClass = hasLiked ? "btn-sprout-liked" : "btn-outline-sprout";
+                      %>
+                      <button type="button" class="btn btn-sm <%= btnClass %> btn-like" data-post-id="<%= post._id %>">
+                        ❤️ <span class="like-count"><%= likes.length %></span>
+                      </button>
                     </div>
                     <small class="text-body-secondary">Community</small>
                   </div>
@@ -140,6 +147,25 @@
               style="background-color: #687d31; color: #d5d3cc; border-radius: 12px; font-weight: 600; padding: 12px; border: none;">Post 🌱</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== POST PREVIEW MODAL ===== -->
+  <div class="modal fade" id="postPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #f2f1ee; border-radius: 24px; overflow: hidden; border: none;">
+        <div class="modal-header border-0 pb-0 position-absolute w-100" style="z-index: 10;">
+          <button type="button" class="btn-close btn-close-white bg-dark p-2 rounded-circle" data-bs-dismiss="modal" style="opacity: 0.7;"></button>
+        </div>
+        <img id="previewModalImg" src="" alt="Full post" style="width: 100%; max-height: 70vh; object-fit: contain; background-color: #1a1a1a;" />
+        <div class="modal-body px-4 pt-3 pb-4">
+          <div class="d-flex align-items-center mb-2">
+            <div class="post-avatar me-2" style="width: 28px; height: 28px; font-size: 0.9rem;">🌱</div>
+            <strong class="post-author" id="previewModalAuthor" style="font-size: 1rem;"></strong>
+          </div>
+          <p class="card-text mb-0 mt-2" id="previewModalCaption" style="font-size: 0.95rem; line-height: 1.5; color: #333;"></p>
+        </div>
       </div>
     </div>
   </div>

@@ -89,6 +89,22 @@ body {
   border-color: #687d31;
 }
 
+.btn-sprout-liked {
+  background-color: #687d31;
+  color: #f2f1ee;
+  border: 1px solid #687d31;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  transition: all 0.2s ease;
+}
+
+.btn-sprout-liked:hover {
+  background-color: #556627;
+  color: #ffffff;
+  border-color: #556627;
+}
+
 /* ---------- ALBUM / CARD GRID ---------- */
 .album {
   background-color: #f2f1ee;
