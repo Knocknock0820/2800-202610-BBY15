@@ -140,6 +140,53 @@ function createPlantCard(plant) {
     }
   }
 
+  // Determine misting state (conditional)
+  const mistingFreq = getPlantMistingFreq(speciesName);
+  const needsMisting = mistingFreq !== null;
+  let isMisted = false;
+  if (needsMisting && plant.lastMistedAt) {
+    const last = new Date(plant.lastMistedAt).getTime();
+    if (now - last < mistingFreq * 24 * 60 * 60 * 1000) {
+      isMisted = true;
+    }
+  }
+
+  // Determine rotated state
+  let isRotated = false;
+  if (plant.lastRotatedAt) {
+    const last = new Date(plant.lastRotatedAt).getTime();
+    if (now - last < 14 * 24 * 60 * 60 * 1000) {
+      // 14 days
+      isRotated = true;
+    }
+  }
+
+  // Determine harvest state
+  const harvestDays = getPlantHarvestDays(speciesName);
+  const isEdible = harvestDays !== null;
+  let isReadyToHarvest = false;
+  let isHarvested = false;
+
+  if (isEdible) {
+    const referenceTime = plant.lastHarvestedAt
+      ? new Date(plant.lastHarvestedAt).getTime()
+      : plant.addedAt
+        ? new Date(plant.addedAt).getTime()
+        : now;
+    const daysSinceRef = (now - referenceTime) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceRef >= harvestDays) {
+      isReadyToHarvest = true;
+    } else if (plant.lastHarvestedAt) {
+      // Stay checked/visible for 8 hours after harvesting
+      const hoursSinceHarvest =
+        (now - new Date(plant.lastHarvestedAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceHarvest < 8) {
+        isHarvested = true;
+      }
+    }
+  }
+
   const maxTemp = getPlantMaxTemp(plant.species);
   const isTooHot =
     typeof window.currentTemperature !== "undefined" &&
@@ -165,6 +212,17 @@ function createPlantCard(plant) {
     sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist" style="display: none;">☀️ Too Hot!</span>`;
   }
 
+  let harvestBadgeHTML = "";
+  if (isEdible) {
+    if (isReadyToHarvest) {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">🌾 Ready to Harvest</span>`;
+    } else if (isHarvested) {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest resolved" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}">✓ Harvested</span>`;
+    } else {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}" style="display: none;">🌾 Ready to Harvest</span>`;
+    }
+  }
+
   // Nickname display
   const nicknameHTML = plant.nickname
     ? `<p class="card-nickname">"${plant.nickname}"</p>`
@@ -182,6 +240,7 @@ function createPlantCard(plant) {
       <div class="card-badges">
         ${waterBadgeHTML}
         ${sunBadgeHTML}
+        ${harvestBadgeHTML}
       </div>
 
       <!-- Card Body: Horizontal Layout -->
@@ -207,7 +266,7 @@ function createPlantCard(plant) {
           ${nicknameHTML}
           <p class="card-date">Added ${addedDate}</p>
           <div class="card-actions">
-            <a href="/details/${plant.slug || (plant.species || plant.name || '').toLowerCase().replace(/\s+/g, '_')}" class="btn-details">Details →</a>
+            <a href="/details/${plant.slug || (plant.species || plant.name || "").toLowerCase().replace(/\s+/g, "_")}" class="btn-details">Details →</a>
             <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
               <img src="/icons/bin.png" alt="Delete" />
             </button>
@@ -221,15 +280,37 @@ function createPlantCard(plant) {
           <!-- Watering Checklist -->
           <div class="checklist-item">
             <input type="checkbox" class="water-checkbox" id="check-water-${plant.id}" ${isWatered ? "checked" : ""} />
-            <label for="check-water-${plant.id}">Water this plant</label>
+            <label for="check-water-${plant.id}">Water the Plant</label>
             <span class="freq-tag">${displayFreq}</span>
           </div>
           
           <!-- Move to Shade Checklist (conditional) -->
           <div class="checklist-item shade-item" id="shade-item-${plant.id}" style="${isTooHot || isInShade ? "" : "display: none;"}">
             <input type="checkbox" class="shade-checkbox" id="check-shade-${plant.id}" ${isInShade ? "checked" : ""} />
-            <label for="check-shade-${plant.id}">Move to shade</label>
+            <label for="check-shade-${plant.id}">Move the Plant into Shade</label>
             <span class="freq-tag">8hr cooldown</span>
+          </div>
+          
+          
+          <!-- Misting Checklist (conditional) -->
+          <div class="checklist-item misting-item" id="misting-item-${plant.id}" style="${needsMisting ? "" : "display: none;"}">
+            <input type="checkbox" class="misting-checkbox" id="check-misting-${plant.id}" ${isMisted ? "checked" : ""} />
+            <label for="check-misting-${plant.id}">Mist the Leaves</label>
+            <span class="freq-tag">${needsMisting ? "Every " + mistingFreq + " days" : ""}</span>
+          </div>
+          
+          <!-- Rotate Checklist -->
+          <div class="checklist-item">
+            <input type="checkbox" class="rotate-checkbox" id="check-rotate-${plant.id}" ${isRotated ? "checked" : ""} />
+            <label for="check-rotate-${plant.id}">Rotate the Plant</label>
+            <span class="freq-tag">Bi-weekly</span>
+          </div>
+          
+          <!-- Harvest Checklist (conditional) -->
+          <div class="checklist-item harvest-item" id="harvest-item-${plant.id}" style="${isEdible && (isReadyToHarvest || isHarvested) ? "" : "display: none;"}">
+          <input type="checkbox" class="harvest-checkbox" id="check-harvest-${plant.id}" ${isHarvested ? "checked" : ""} />
+            <label for="check-harvest-${plant.id}">Your Plant Might be Ready to Harvest!</label>
+            <span class="freq-tag">${harvestDays} days</span>
           </div>
         </div>
       </div>
@@ -246,7 +327,17 @@ function createPlantCard(plant) {
 
     const checklist = card.querySelector(".checklist-panel");
     if (checklist) {
-      checklist.classList.toggle("open");
+      const wasOpen = checklist.classList.contains("open");
+
+      // Close all open checklists
+      document.querySelectorAll(".checklist-panel.open").forEach((panel) => {
+        panel.classList.remove("open");
+      });
+
+      // If it wasn't open before, open it now
+      if (!wasOpen) {
+        checklist.classList.add("open");
+      }
     }
   });
 
@@ -335,6 +426,40 @@ function createPlantCard(plant) {
     });
   }
 
+  // --- Event: Misting checkbox ---
+  const mistingCheckbox = card.querySelector(".misting-checkbox");
+  if (mistingCheckbox) {
+    mistingCheckbox.addEventListener("change", (e) => {
+      updatePlantMistedState(plant.id, e.target.checked);
+    });
+  }
+
+  // --- Event: Rotate checkbox ---
+  const rotateCheckbox = card.querySelector(".rotate-checkbox");
+  if (rotateCheckbox) {
+    rotateCheckbox.addEventListener("change", (e) => {
+      updatePlantRotatedState(plant.id, e.target.checked);
+    });
+  }
+
+  // --- Event: Harvest checkbox ---
+  const harvestCheckbox = card.querySelector(".harvest-checkbox");
+  if (harvestCheckbox) {
+    harvestCheckbox.addEventListener("change", (e) => {
+      updatePlantHarvestedState(plant.id, e.target.checked);
+      const badge = card.querySelector(`#harvest-badge-${plant.id}`);
+      if (badge) {
+        if (e.target.checked) {
+          badge.classList.add("resolved");
+          badge.textContent = "✓ Harvested";
+        } else {
+          badge.classList.remove("resolved");
+          badge.textContent = "🌾 Ready to Harvest";
+        }
+      }
+    });
+  }
+
   // --- Event: Delete button ---
   const deleteBtn = card.querySelector(".btn-delete-card");
   if (deleteBtn) {
@@ -372,6 +497,59 @@ function updatePlantShadeState(id, inShade) {
     plants[index].movedToShadeAt = inShade ? new Date().toISOString() : null;
     savePlants(plants);
   }
+}
+
+// Update the misted state of a plant
+function updatePlantMistedState(id, isMisted) {
+  const plants = loadPlants();
+  const index = plants.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    plants[index].lastMistedAt = isMisted ? new Date().toISOString() : null;
+    savePlants(plants);
+  }
+}
+
+// Update the rotated state of a plant
+function updatePlantRotatedState(id, isRotated) {
+  const plants = loadPlants();
+  const index = plants.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    plants[index].lastRotatedAt = isRotated ? new Date().toISOString() : null;
+    savePlants(plants);
+  }
+}
+
+// Helper to determine misting frequency for tropical plants
+function getPlantMistingFreq(species) {
+  const mistingMap = {
+    Monstera: 3,
+    "Peace Lily": 2,
+    "Spider Plant": 4,
+    Pothos: 4,
+    "Rubber Tree": 7,
+  };
+  return mistingMap[species] !== undefined ? mistingMap[species] : null;
+}
+
+// Update the harvested state of a plant
+function updatePlantHarvestedState(id, isHarvested) {
+  const plants = loadPlants();
+  const index = plants.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    plants[index].lastHarvestedAt = isHarvested
+      ? new Date().toISOString()
+      : null;
+    savePlants(plants);
+  }
+}
+
+// Check if a plant is edible and how long until harvest
+function getPlantHarvestDays(species) {
+  const harvestMap = {
+    Monstera: 120, // Fruit takes time to ripen
+    "Aloe Vera": 60, // Good to harvest leaves after 60 days
+  };
+  return harvestMap[species] !== undefined ? harvestMap[species] : null;
 }
 
 function getIntervalDays(freqStr) {
@@ -593,6 +771,9 @@ async function savePlant() {
           : getIntervalDays(selectedType.waterFreq),
       addedAt: new Date().toISOString(),
       lastWateredAt: null,
+      lastMistedAt: null,
+      lastRotatedAt: null,
+      lastHarvestedAt: null,
     };
 
     console.log("Saving new plant:", newPlant);
