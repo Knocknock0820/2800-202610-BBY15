@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@google/genai": "^2.3.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
     "connect-mongo": "^6.0.0",
@@ -23,7 +24,8 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "seed:plants": "node public/js/seedPlants.js",
-    "add:species": "node scripts/addSpecies.js"
+    "add:species": "node scripts/addSpecies.js",
+    "gemini:test-plant": "node scripts/testGeminiPlant.js"
   },
   "repository": {
     "type": "git",

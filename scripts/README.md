@@ -56,3 +56,26 @@ The script expects files to be organized in specific locations:
 - Lifecycle images and descriptions are optional but recommended
 - The script uses `.jpg` files by default but will fall back to `.png` if `.jpg` is not found
 - You can run the script multiple times for the same plant to update its data
+
+## testGeminiPlant.js
+
+Generate a short plant description with Gemini and download a matching plant photo set from Unsplash.
+
+### Usage
+
+```bash
+node scripts/testGeminiPlant.js <plant name>
+```
+
+### Example
+
+```bash
+node scripts/testGeminiPlant.js monstera deliciosa
+```
+
+### Output
+
+- Writes a short description to `public/descriptions/<plant>.md`
+- Writes the hero image to `public/images/details/<plant>/<plant>.jpg`
+- Writes lifecycle images to `public/images/details/<plant>/<plant>_seed.jpg`, `_sprout.jpg`, `_mature.jpg`, `_flower.jpg`, and `_harvest.jpg`
+- Requires `GEMINI_API_KEY` and `UNSPLASH_ACCESS_KEY` in your environment
