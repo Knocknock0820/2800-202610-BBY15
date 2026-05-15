@@ -99,10 +99,15 @@ body {
               box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 12px rgba(25, 53, 12, 0.06);
   position: relative;
+  /* Fix for repainting blank white rectangles when off-screen */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .plant-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) translateZ(0);
   box-shadow: 0 8px 30px rgba(25, 53, 12, 0.12);
 }
 
@@ -160,6 +165,18 @@ body {
 }
 
 .badge-sun.resolved {
+  background: rgba(25, 135, 84, 0.1);
+  color: #198754;
+  border-color: rgba(25, 135, 84, 0.2);
+}
+
+.badge-harvest {
+  background: rgba(230, 185, 5, 0.1);
+  color: #c99a00;
+  border-color: rgba(230, 185, 5, 0.2);
+}
+
+.badge-harvest.resolved {
   background: rgba(25, 135, 84, 0.1);
   color: #198754;
   border-color: rgba(25, 135, 84, 0.2);
@@ -328,6 +345,7 @@ body {
               padding 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   background: rgba(143, 169, 78, 0.06);
   border-top: 1px solid rgba(104, 125, 49, 0);
+  will-change: max-height;
 }
 
 .checklist-panel.open {

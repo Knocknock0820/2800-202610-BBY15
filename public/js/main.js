@@ -138,7 +138,59 @@ function createPlantCard(plant) {
     }
   }
 
-  const maxTemp = getPlantMaxTemp(plant.species);
+  // Look up plant type info from loaded database data
+  const plantTypeInfo =
+    availablePlantTypes.find((p) => p.name === speciesName) || {};
+
+  // Determine misting state (conditional)
+  const mistingFreq = plantTypeInfo.mistingFreq || null;
+  const needsMisting = mistingFreq !== null;
+  let isMisted = false;
+  if (needsMisting && plant.lastMistedAt) {
+    const last = new Date(plant.lastMistedAt).getTime();
+    if (now - last < mistingFreq * 24 * 60 * 60 * 1000) {
+      isMisted = true;
+    }
+  }
+
+  // Determine rotated state
+  let isRotated = false;
+  if (plant.lastRotatedAt) {
+    const last = new Date(plant.lastRotatedAt).getTime();
+    if (now - last < 14 * 24 * 60 * 60 * 1000) {
+      // 14 days
+      isRotated = true;
+    }
+  }
+
+  // Determine harvest state
+  const harvestDays =
+    plantTypeInfo.harvestDays !== undefined ? plantTypeInfo.harvestDays : null;
+  const isEdible = harvestDays !== null;
+  let isReadyToHarvest = false;
+  let isHarvested = false;
+
+  if (isEdible) {
+    const referenceTime = plant.lastHarvestedAt
+      ? new Date(plant.lastHarvestedAt).getTime()
+      : plant.addedAt
+        ? new Date(plant.addedAt).getTime()
+        : now;
+    const daysSinceRef = (now - referenceTime) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceRef >= harvestDays) {
+      isReadyToHarvest = true;
+    } else if (plant.lastHarvestedAt) {
+      // Stay checked/visible for 8 hours after harvesting
+      const hoursSinceHarvest =
+        (now - new Date(plant.lastHarvestedAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceHarvest < 8) {
+        isHarvested = true;
+      }
+    }
+  }
+
+  const maxTemp = plantTypeInfo.temp || 25;
   const isTooHot =
     typeof window.currentTemperature !== "undefined" &&
     window.currentTemperature > maxTemp;
@@ -163,6 +215,17 @@ function createPlantCard(plant) {
     sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist" style="display: none;">☀️ Too Hot!</span>`;
   }
 
+  let harvestBadgeHTML = "";
+  if (isEdible) {
+    if (isReadyToHarvest) {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">🌾 Ready to Harvest</span>`;
+    } else if (isHarvested) {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest resolved" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}">✓ Harvested</span>`;
+    } else {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}" style="display: none;">🌾 Ready to Harvest</span>`;
+    }
+  }
+
   // Nickname display
   const nicknameHTML = plant.nickname
     ? `<p class="card-nickname">"${plant.nickname}"</p>`
@@ -180,6 +243,7 @@ function createPlantCard(plant) {
       <div class="card-badges">
         ${waterBadgeHTML}
         ${sunBadgeHTML}
+        ${harvestBadgeHTML}
       </div>
 
       <!-- Card Body: Horizontal Layout -->
@@ -205,7 +269,7 @@ function createPlantCard(plant) {
           ${nicknameHTML}
           <p class="card-date">Added ${addedDate}</p>
           <div class="card-actions">
-            <a href="/details/${plant.slug || (plant.species || plant.name || '').toLowerCase().replace(/\s+/g, '_')}" class="btn-details">Details →</a>
+            <a href="/details/${plant.slug || (plant.species || plant.name || "").toLowerCase().replace(/\s+/g, "_")}" class="btn-details">Details →</a>
             <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
               <img src="/icons/bin.png" alt="Delete" />
             </button>
@@ -219,15 +283,36 @@ function createPlantCard(plant) {
           <!-- Watering Checklist -->
           <div class="checklist-item">
             <input type="checkbox" class="water-checkbox" id="check-water-${plant.id}" ${isWatered ? "checked" : ""} />
-            <label for="check-water-${plant.id}">Water this plant</label>
+            <label for="check-water-${plant.id}">Water the Plant</label>
             <span class="freq-tag">${displayFreq}</span>
           </div>
           
           <!-- Move to Shade Checklist (conditional) -->
           <div class="checklist-item shade-item" id="shade-item-${plant.id}" style="${isTooHot || isInShade ? "" : "display: none;"}">
             <input type="checkbox" class="shade-checkbox" id="check-shade-${plant.id}" ${isInShade ? "checked" : ""} />
-            <label for="check-shade-${plant.id}">Move to shade</label>
+            <label for="check-shade-${plant.id}">Move the Plant into Shade</label>
             <span class="freq-tag">8hr cooldown</span>
+          </div>
+          
+          
+          <!-- Misting Checklist (conditional) -->
+          <div class="checklist-item misting-item" id="misting-item-${plant.id}" style="${needsMisting ? "" : "display: none;"}">
+            <input type="checkbox" class="misting-checkbox" id="check-misting-${plant.id}" ${isMisted ? "checked" : ""} />
+            <label for="check-misting-${plant.id}">Mist the Leaves</label>
+            <span class="freq-tag">${needsMisting ? "Every " + mistingFreq + " days" : ""}</span>
+          </div>
+          
+          <!-- Rotate Checklist -->
+          <div class="checklist-item">
+            <input type="checkbox" class="rotate-checkbox" id="check-rotate-${plant.id}" ${isRotated ? "checked" : ""} />
+            <label for="check-rotate-${plant.id}">Rotate the Plant</label>
+            <span class="freq-tag">Bi-weekly</span>
+          </div>
+          
+          <!-- Harvest Checklist (conditional) -->
+          <div class="checklist-item harvest-item" id="harvest-item-${plant.id}" style="${isEdible && (isReadyToHarvest || isHarvested) ? "" : "display: none;"}">
+          <input type="checkbox" class="harvest-checkbox" id="check-harvest-${plant.id}" ${isHarvested ? "checked" : ""} />
+            <label for="check-harvest-${plant.id}">${isHarvested ? "Plant Harvested!" : "Your Plant is Ready to Harvest!"}</label>
           </div>
         </div>
       </div>
@@ -244,7 +329,17 @@ function createPlantCard(plant) {
 
     const checklist = card.querySelector(".checklist-panel");
     if (checklist) {
-      checklist.classList.toggle("open");
+      const wasOpen = checklist.classList.contains("open");
+
+      // Close all open checklists
+      document.querySelectorAll(".checklist-panel.open").forEach((panel) => {
+        panel.classList.remove("open");
+      });
+
+      // If it wasn't open before, open it now
+      if (!wasOpen) {
+        checklist.classList.add("open");
+      }
     }
   });
 
@@ -336,6 +431,51 @@ function createPlantCard(plant) {
     });
   }
 
+  // --- Event: Misting checkbox ---
+  const mistingCheckbox = card.querySelector(".misting-checkbox");
+  if (mistingCheckbox) {
+    mistingCheckbox.addEventListener("change", (e) => {
+      updatePlantMistedState(plant.id, e.target.checked);
+    });
+  }
+
+  // --- Event: Rotate checkbox ---
+  const rotateCheckbox = card.querySelector(".rotate-checkbox");
+  if (rotateCheckbox) {
+    rotateCheckbox.addEventListener("change", (e) => {
+      updatePlantRotatedState(plant.id, e.target.checked);
+    });
+  }
+
+  // --- Event: Harvest checkbox ---
+  const harvestCheckbox = card.querySelector(".harvest-checkbox");
+  if (harvestCheckbox) {
+    harvestCheckbox.addEventListener("change", (e) => {
+      updatePlantHarvestedState(plant.id, e.target.checked);
+      const badge = card.querySelector(`#harvest-badge-${plant.id}`);
+      const label = card.querySelector(
+        `label[for="check-harvest-${plant.id}"]`,
+      );
+      if (badge) {
+        if (e.target.checked) {
+          badge.style.display = "";
+          badge.classList.add("resolved");
+          badge.textContent = "✓ Harvested";
+          if (label) label.textContent = "Plant Harvested!";
+        } else {
+          badge.classList.remove("resolved");
+          badge.textContent = "🌾 Ready to Harvest";
+          if (label) label.textContent = "Your Plant is Ready to Harvest!";
+          if (!isReadyToHarvest) {
+            badge.style.display = "none";
+          } else {
+            badge.style.display = "";
+          }
+        }
+      }
+    });
+  }
+
   // --- Event: Delete button ---
   const deleteBtn = card.querySelector(".btn-delete-card");
   if (deleteBtn) {
@@ -399,6 +539,31 @@ async function updatePlantShadeState(id, inShade) {
   });
 }
 
+// Update the misted state of a plant
+async function updatePlantMistedState(id, isMisted) {
+  await updatePlant(id, {
+    lastMistedAt: isMisted ? new Date().toISOString() : null,
+  });
+}
+
+// Update the rotated state of a plant
+async function updatePlantRotatedState(id, isRotated) {
+  await updatePlant(id, {
+    lastRotatedAt: isRotated ? new Date().toISOString() : null,
+  });
+}
+
+// Helper function removed - using DB values
+
+// Update the harvested state of a plant
+async function updatePlantHarvestedState(id, isHarvested) {
+  await updatePlant(id, {
+    lastHarvestedAt: isHarvested ? new Date().toISOString() : null,
+  });
+}
+
+// Helper function removed - using DB values
+
 function getIntervalDays(freqStr) {
   if (!freqStr || typeof freqStr !== "string") return 7;
   const str = freqStr.toLowerCase();
@@ -412,17 +577,7 @@ function getIntervalDays(freqStr) {
   return 7; // default to 1 week
 }
 
-// After we implement plant database, we can remove this function and just get the data from the database
-// Currently used to get max temperature tolerance for a plant species
-function getPlantMaxTemp(species) {
-  if (!availablePlantTypes || !availablePlantTypes.length) return 30;
-  // Try to find by name or slug
-  const found = availablePlantTypes.find(
-    (p) => p.name === species || p.slug === species,
-  );
-  if (found && typeof found.temp === "number") return found.temp;
-  return 30; // sensible default
-}
+// Helper function removed - using DB values
 
 // Update temperature alerts for all rendered cards dynamically
 // Adapted from AI, used to show temperature alerts for plants
@@ -439,7 +594,9 @@ async function updateTemperatureAlerts() {
         isInShade = true;
       }
     }
-    const maxTemp = getPlantMaxTemp(plant.species);
+    const plantTypeInfo =
+      availablePlantTypes.find((p) => p.name === plant.species) || {};
+    const maxTemp = plantTypeInfo.temp || 25;
     const isTooHot = window.currentTemperature > maxTemp;
 
     // Toggle Sun Badge
@@ -497,8 +654,6 @@ async function renderPlants() {
 
 // Selected file reference for upload
 let selectedPlantImageFile = null;
-
-
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
@@ -588,7 +743,6 @@ async function savePlant() {
 
   try {
     const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
-   
 
     let imageUrl = null;
 
@@ -626,6 +780,9 @@ async function savePlant() {
           : getIntervalDays(selectedType.waterFreq),
       addedAt: new Date().toISOString(),
       lastWateredAt: null,
+      lastMistedAt: null,
+      lastRotatedAt: null,
+      lastHarvestedAt: null,
     };
 
     console.log("Saving new plant:", newPlant);
@@ -633,13 +790,13 @@ async function savePlant() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-    },
+      },
       body: JSON.stringify(newPlant),
     });
 
-if (!response.ok) {
-  throw new Error("Failed to save plant");
-}
+    if (!response.ok) {
+      throw new Error("Failed to save plant");
+    }
 
     // Close the bootstrap modal
     const modalEl = document.getElementById("addPlantModal");
@@ -709,8 +866,6 @@ function navigateGuide(direction) {
 }
 
 function initModal() {
-  fetchPlantTypes();
-
   // Clear modal inputs when it's about to be shown
   const modalEl = document.getElementById("addPlantModal");
   if (modalEl) {
@@ -731,6 +886,7 @@ function initModal() {
 ------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   await loadWeather();
+  await fetchPlantTypes(); // Must load plant attributes before rendering cards
   await renderPlants(); // render saved plants on page load
   initModal(); // wire up the add-plant modal
 });
