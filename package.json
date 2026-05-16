@@ -1,6 +1,8 @@
 {
   "dependencies": {
+    "@google/genai": "^2.3.0",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.10.0",
     "connect-mongo": "^6.0.0",
     "dotenv": "^17.4.2",
     "ejs": "^5.0.2",
@@ -10,7 +12,9 @@
     "install": "^0.13.0",
     "joi": "^18.2.1",
     "marked": "^18.0.3",
-    "mongodb": "^7.2.0"
+    "mongodb": "^7.2.0",
+    "multer": "^2.1.1",
+    "multer-storage-cloudinary": "^4.0.0"
   },
   "name": "2800-202610-bby15",
   "version": "1.0.0",
@@ -18,7 +22,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "seed:plants": "node public/js/seedPlants.js",
+    "add:species": "node scripts/addSpecies.js",
+    "gemini:test-plant": "node scripts/testGeminiPlant.js"
   },
   "repository": {
     "type": "git",

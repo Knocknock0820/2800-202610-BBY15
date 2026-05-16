@@ -1,11 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hello World</title>
-  </head>
+   </head>
+   <%- include('partials/head', { title: 'Profile | Sprout', pageCSS: '/css/profile.css' }) %>
+    </head>
   <body>
-    <h1>hello world</h1>
+    <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
+
+
+
+  <main class="profile-main">
+
+    <% if (locals.error && error) { %>
+      <div class="alert alert-danger mx-auto mt-3" style="max-width:640px;">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form action="/profile" method="POST" enctype="multipart/form-data" class="profile-form">
+
+      <!-- ── Photo + name header ── -->
+      <div class="profile-header">
+        <div class="avatar-zone">
+          <img
+            id="avatarPreview"
+            src="<%= user?.photoUrl || '/icons/account.png' %>"
+            alt="Profile photo"
+            class="avatar-img"
+            onclick="document.getElementById('photo').click()"
+          />
+          
+          <div class="avatar-edit-badge" onclick="document.getElementById('photo').click()">✏️</div>
+          <input type="file" id="photo" name="photo" accept="image/*"
+                 style="display:none;" onchange="previewPhoto(this)" />
+        </div>
+        <div class="profile-header-text">
+          <h2 class="profile-display-name" id="displayName">
+            <% if (user?.firstName && user?.lastName) { %>
+              <%= user.firstName %> <%= user.lastName %>
+            <% } else { %>
+              <%= user?.username || name %>
+            <% } %>
+          </h2>
+          <p class="profile-email"><%= user?.email || '' %></p>
+          <p class="profile-hint">click profile photo to upload a photo</p>
+        </div>
+      </div>
+
+      <!-- ── Personal info ── -->
+      <p class="section-label">Personal info</p>
+      <div class="profile-card">
+        <div class="field-row">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input type="text" id="firstName" name="firstName"
+                   value="<%= user?.firstName || '' %>"
+                   placeholder="Jason"
+                   oninput="updateName()" />
+          </div>
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input type="text" id="lastName" name="lastName"
+                   value="<%= user?.lastName || '' %>"
+                   placeholder="Wilder"
+                   oninput="updateName()" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="dateOfBirth">Date of birth</label>
+          <input type="text" id="dateOfBirth" name="dateOfBirth"
+                placeholder="YYYY-MM-DD"
+                pattern="\d{4}-\d{2}-\d{2}"
+                value="<%= user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '' %>" />
+        </div>
+        </div>
+      
+        
+        
+
+      <!-- ── Professional info ── -->
+      <p class="section-label">Professional info</p>
+      <div class="profile-card">
+        <div class="field">
+          <label for="occupation">Occupation</label>
+          <input type="text" id="occupation" name="occupation"
+                 value="<%= user?.occupation || '' %>"
+                 placeholder="e.g. full stack developer" />
+        </div>
+        <div class="field">
+          <label for="salary">Annual salary</label>
+          <div class="salary-wrap">
+            <span class="salary-prefix">$</span>
+            <input type="text" id="salary" name="salary" min="0"
+                   value="<%= user?.salary || '' %>"
+                   placeholder="1,000,000,000" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Gardening ── -->
+      <p class="section-label">Gardening</p>
+      <div class="profile-card">
+        <div class="field">
+          <label for="whyGardening">why did you picked up gardening?</label>
+          <textarea id="whyGardening" name="whyGardening" rows="4"
+                    placeholder="Share what drew you to gardening..."><%= user?.whyGardening || '' %></textarea>
+        </div>
+      </div>
+
+      <!-- ── letting user change password ── -->
+      <p class="section-label">Change password</p>
+      <div class="profile-card">
+        <div class="field">
+          <label for="currentPassword">Current password</label>
+          <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter current password" form="changePasswordForm" />
+        </div>
+        <div class="field">
+          <label for="newPassword">New password</label>
+          <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password" form="changePasswordForm" />
+        </div>
+        <div class="field">
+          <label for="confirmPassword">Confirm new password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password" form="changePasswordForm" />
+        </div>
+        <div class="profile-btn-row" style="margin-top: 0.5rem;">
+          <button type="submit" form="changePasswordForm" class="btn-save">Update password</button>
+        </div>
+      </div>
+
+      <!-- ── Buttons ── -->
+      <div class="profile-btn-row">
+        <a href="/" class="btn-cancel">Cancel</a>
+        <button type="submit" class="btn-save">Save profile</button>
+      </div>
+
+    </form>
+    <!-- making a different form its easier this way-->
+    <form id="changePasswordForm" action="/change-password" method="POST"></form>
+  </main>
+
+  <%- include('partials/footer', { showBottomNav: true, activeTab: 'profile', showCopyright: false }) %>
+
+  <script>
+    function previewPhoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('avatarPreview').src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateName() {
+      const first = document.getElementById('firstName').value.trim();
+      const last  = document.getElementById('lastName').value.trim();
+      document.getElementById('displayName').textContent =
+        [first, last].filter(Boolean).join(' ') || '<%= user?.username || name %>';
+    }
+  </script>
+
   </body>
 </html>

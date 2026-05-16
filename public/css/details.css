@@ -76,6 +76,17 @@ h5,
   width: 100%;
   height: 100%;
   object-fit: cover; /* Ensures photos don't stretch, they crop to fit the 200px height */
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 340ms ease,
+    transform 340ms ease;
+  will-change: opacity, transform;
+}
+
+.lifecycle-photo-wrapper img.is-hidden {
+  opacity: 0;
+  transform: scale(0.99);
 }
 
 .cycle-title {

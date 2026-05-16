@@ -31,6 +31,8 @@ async function loadWeather() {
           );
           if (!res.ok) throw new Error("Weather error");
           const data = await res.json();
+          window.currentTemperature = data.temp;
+          updateTemperatureAlerts();
           showWeather(data.temp, data.city);
         } catch {
           el.textContent = "Weather unavailable";
@@ -56,6 +58,8 @@ async function loadWeatherByIP() {
     const res = await fetch("/api/weather/ip");
     if (!res.ok) throw new Error("Weather error");
     const data = await res.json();
+    window.currentTemperature = data.temp;
+    updateTemperatureAlerts();
     showWeather(data.temp, data.city);
   } catch {
     el.textContent = "Weather unavailable";
@@ -64,92 +68,229 @@ async function loadWeatherByIP() {
 
 /* -------------------------------------------------------
    2. PLANT STORAGE
-   Plants are stored in localStorage as a JSON array.
+   Plants are stored in database.
    Each plant object: { id, name, waterFreq, addedAt }
 ------------------------------------------------------- */
-
-const STORAGE_KEY = "users_plants";
-
-// Load the plant array from localStorage (empty array if nothing saved)
-function loadPlants() {
+async function loadPlants() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
+    const res = await fetch("/api/user/plants");
+
+    if (!res.ok) {
+      throw new Error("Failed to load plants");
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.error(err);
     return [];
   }
 }
 
-// Persist the plant array back to localStorage
-function savePlants(plants) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(plants));
-}
-
 /* -------------------------------------------------------
    3. PLANT CARD RENDERING
-   Build a card DOM element for a single plant object
-   and attach the expand/collapse toggle to it.
+   Build a premium card DOM element for a single plant
+   with horizontal layout, notification badges, and
+   expandable checklist.
 ------------------------------------------------------- */
-// Code adopted from bootstrap : https://getbootstrap.com/docs/5.3/components/card/
+// Card design inspired by Bootstrap Blog template: https://getbootstrap.com/docs/5.3/examples/blog/
 // Modified by: Harun Yaprak
+
+// Get default image for a species (fallback if user hasn't uploaded)
+function getDefaultPlantImage(species) {
+  if (!species) return "/images/error.png";
+  const name = species.toLowerCase().replace(/\s+/g, "_");
+  return `/images/${name}.jpg`;
+}
+
 // Create and return a .plant-card element for the given plant
 function createPlantCard(plant) {
   const wrapper = document.createElement("div");
 
   const displayName = plant.nickname
-    ? `${plant.nickname} (${plant.species})`
+    ? plant.nickname
     : plant.species || plant.name;
+  const speciesName = plant.species || plant.name;
   const addedDate = plant.addedAt
     ? new Date(plant.addedAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
     : "Unknown date";
 
+  // Determine watering state
   const now = Date.now();
   let isWatered = false;
   if (plant.lastWateredAt) {
     const last = new Date(plant.lastWateredAt).getTime();
-    const intervalMs = (plant.intervalDays || 7) * 24 * 60 * 60 * 1000;
+    const intervalDays = plant.intervalDays || (typeof plant.waterFreq === 'number' ? plant.waterFreq : getIntervalDays(plant.waterFreq)) || 7;
+    const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
     if (now - last < intervalMs) {
       isWatered = true;
     }
   }
 
+  // Look up plant type info from loaded database data
+  const plantTypeInfo =
+    availablePlantTypes.find((p) => p.name === speciesName) || {};
+
+  // Determine misting state (conditional)
+  const mistingFreq = plantTypeInfo.mistingFreq || null;
+  const needsMisting = mistingFreq !== null;
+  let isMisted = false;
+  if (needsMisting && plant.lastMistedAt) {
+    const last = new Date(plant.lastMistedAt).getTime();
+    if (now - last < mistingFreq * 24 * 60 * 60 * 1000) {
+      isMisted = true;
+    }
+  }
+
+  // Determine rotated state
+  let isRotated = false;
+  if (plant.lastRotatedAt) {
+    const last = new Date(plant.lastRotatedAt).getTime();
+    if (now - last < 14 * 24 * 60 * 60 * 1000) {
+      // 14 days
+      isRotated = true;
+    }
+  }
+
+  // Determine harvest state
+  const harvestDays =
+    plantTypeInfo.harvestDays !== undefined ? plantTypeInfo.harvestDays : null;
+  const isEdible = harvestDays !== null;
+  let isReadyToHarvest = false;
+  let isHarvested = false;
+
+  if (isEdible) {
+    const referenceTime = plant.lastHarvestedAt
+      ? new Date(plant.lastHarvestedAt).getTime()
+      : plant.addedAt
+        ? new Date(plant.addedAt).getTime()
+        : now;
+    const daysSinceRef = (now - referenceTime) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceRef >= harvestDays) {
+      isReadyToHarvest = true;
+    } else if (plant.lastHarvestedAt) {
+      // Stay checked/visible for 8 hours after harvesting
+      const hoursSinceHarvest =
+        (now - new Date(plant.lastHarvestedAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceHarvest < 8) {
+        isHarvested = true;
+      }
+    }
+  }
+
+  const maxTemp = plantTypeInfo.temp || 25;
+  const isTooHot =
+    typeof window.currentTemperature !== "undefined" &&
+    window.currentTemperature > maxTemp;
+  const showSunAlert = isTooHot;
+
+  // Use user-uploaded image or default
+  const plantImageUrl = plant.imageUrl || getDefaultPlantImage(plant.species);
+
+  // Build badge HTML
+  const waterBadgeClass = isWatered
+    ? "badge-notify badge-water resolved"
+    : "badge-notify badge-water";
+  const waterBadgeText = isWatered ? "✓ Watered" : "💧 Needs Water";
+  const waterBadgeHTML = `<span class="${waterBadgeClass}" id="water-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">${waterBadgeText}</span>`;
+
+  let sunBadgeHTML = `<span class="badge-notify badge-sun" id="sun-badge-${plant.id}" data-plant-id="${plant.id}" style="display: ${showSunAlert ? "" : "none"};">☀️</span>`;
+
+  let harvestBadgeHTML = "";
+  if (isEdible) {
+    if (isReadyToHarvest) {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}" title="Click to expand checklist">🌾 Ready to Harvest</span>`;
+    } else if (isHarvested) {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest resolved" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}">✓ Harvested</span>`;
+    } else {
+      harvestBadgeHTML = `<span class="badge-notify badge-harvest" id="harvest-badge-${plant.id}" data-plant-id="${plant.id}" style="display: none;">🌾 Ready to Harvest</span>`;
+    }
+  }
+
+  // Nickname display
+  const nicknameHTML = plant.nickname
+    ? `<p class="card-nickname">"${plant.nickname}"</p>`
+    : "";
+
+  // Format water frequency if it's just a number
+  const resolvedDays = plant.intervalDays || (typeof plant.waterFreq === 'number' ? plant.waterFreq : getIntervalDays(plant.waterFreq)) || 7;
+  let displayFreq = resolvedDays == 1 ? "Every day" : `Every ${resolvedDays} days`;
+
   wrapper.innerHTML = `
-    <!-- Bootstrap Card -->
-    <div class="card mb-3 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; background-color: #d5d3cc;">
-      <!-- Card Header (Clickable for Bootstrap Collapse) -->
-      <div class="card-header fw-bold d-flex justify-content-between align-items-center" 
-           data-bs-toggle="collapse" 
-           href="#collapsePlant${plant.id}" 
-           role="button" aria-expanded="false" 
-           style="cursor: pointer; padding: 16px 24px; color: #19350c; background-color: transparent; border-bottom: none;">
-        <span>${displayName}</span>
-        <small class="text-muted" style="font-size: 0.7em;">▼</small>
+    <div class="plant-card" data-plant-id="${plant.id}">
+      <!-- Notification Badges -->
+      <div class="card-badges">
+        ${waterBadgeHTML}
+        ${sunBadgeHTML}
+        ${harvestBadgeHTML}
       </div>
-      
-      <!-- Collapsible Body -->
-      <div class="collapse" id="collapsePlant${plant.id}">
-        <div class="card-body" style="background-color: #e8e6e0; padding: 16px 24px;">
-          <p class="small mb-3" style="color: #687d31; font-weight: 500; font-style: italic;">Added on ${addedDate}</p>
-          
+
+      <!-- Card Body: Horizontal Layout -->
+      <div class="card-body-row">
+        <!-- Plant Image -->
+        <div class="plant-img-wrapper" id="img-wrapper-${plant.id}">
+          <img src="${plantImageUrl}" alt="${speciesName}" 
+               onerror="if(this.src.includes('.jpg')){this.src=this.src.replace('.jpg','.png')}else if(!this.src.includes('error.png')){this.src='/images/error.png'}" />
+          <div class="img-upload-overlay" title="Upload photo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" 
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <input type="file" class="card-image-input" accept="image/jpeg,image/png,image/webp,image/heic" 
+            style="display:none;" data-plant-id="${plant.id}" />
+        </div>
+
+        <!-- Card Info -->
+        <div class="card-info">
+          <h3 class="card-species">${speciesName}</h3>
+          ${nicknameHTML}
+          <p class="card-date">Added ${addedDate}</p>
+          <div class="card-actions">
+            <a href="/details/${plant.slug || (plant.species || plant.name || "").toLowerCase().replace(/\s+/g, "_")}" class="btn-details">Details →</a>
+            <button class="btn-edit-card" data-id="${plant.id}" title="Edit plant">
+              <img src="/icons/edit-pencil.png" alt="Edit" />
+            </button>
+            <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
+              <img src="/icons/bin.png" alt="Delete" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expandable Checklist Panel -->
+      <div class="checklist-panel" id="checklist-${plant.id}">
+        <div class="checklist-inner">
           <!-- Watering Checklist -->
-          <div class="form-check mb-3 p-3" style="background-color: #f2f1ee; border-radius: 12px; margin-left: 0; padding-left: 12px;">
-            <div class="d-flex align-items-center gap-2">
-              <input class="form-check-input water-checkbox m-0" type="checkbox" id="check${plant.id}" ${isWatered ? "checked" : ""} style="width: 18px; height: 18px; accent-color: #687d31;">
-              <label class="form-check-label" for="check${plant.id}" style="color: #19350c; font-size: 0.9rem;">
-                Watering Schedule: ${plant.waterFreq}
-              </label>
-            </div>
+          <div class="checklist-item">
+            <input type="checkbox" class="water-checkbox" id="check-water-${plant.id}" ${isWatered ? "checked" : ""} />
+            <label for="check-water-${plant.id}">Water the Plant</label>
+            <span class="freq-tag">${displayFreq}</span>
           </div>
           
-          <!-- Footer Buttons -->
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
-            <a href="/details/${plant.species}" class="btn btn-sm text-decoration-none px-4" style="background-color: #687d31; color: #d5d3cc; border-radius: 20px; font-weight: 600;">Details</a>
-            <button class="btn btn-sm btn-delete border-0" data-id="${plant.id}" title="Remove plant" style="background: transparent; border: 1.5px solid rgba(25,53,12,0.2) !important; border-radius: 20px; padding: 4px 10px;">
-              <img src="/icons/bin.png" alt="Delete" style="width: 16px; height: 16px; opacity: 0.6;" />
-            </button>
+          <!-- Misting Checklist (conditional) -->
+          <div class="checklist-item misting-item" id="misting-item-${plant.id}" style="${needsMisting ? "" : "display: none;"}">
+            <input type="checkbox" class="misting-checkbox" id="check-misting-${plant.id}" ${isMisted ? "checked" : ""} />
+            <label for="check-misting-${plant.id}">Mist the Leaves</label>
+            <span class="freq-tag">${needsMisting ? "Every " + mistingFreq + " days" : ""}</span>
+          </div>
+          
+          <!-- Rotate Checklist -->
+          <div class="checklist-item">
+            <input type="checkbox" class="rotate-checkbox" id="check-rotate-${plant.id}" ${isRotated ? "checked" : ""} />
+            <label for="check-rotate-${plant.id}">Rotate the Plant</label>
+            <span class="freq-tag">Bi-weekly</span>
+          </div>
+          
+          <!-- Harvest Checklist (conditional) -->
+          <div class="checklist-item harvest-item" id="harvest-item-${plant.id}" style="${isEdible && (isReadyToHarvest || isHarvested) ? "" : "display: none;"}">
+          <input type="checkbox" class="harvest-checkbox" id="check-harvest-${plant.id}" ${isHarvested ? "checked" : ""} />
+            <label for="check-harvest-${plant.id}">${isHarvested ? "Plant Harvested!" : "Your Plant is Ready to Harvest!"}</label>
           </div>
         </div>
       </div>
@@ -158,16 +299,148 @@ function createPlantCard(plant) {
 
   const card = wrapper.firstElementChild;
 
-  // Attach listener to checkbox to save watering state
-  const checkbox = card.querySelector(".water-checkbox");
-  if (checkbox) {
-    checkbox.addEventListener("change", (e) => {
-      updatePlantWateredState(plant.id, e.target.checked);
+  // --- Event: Card click toggles checklist ---
+  card.addEventListener("click", (e) => {
+    // Ignore clicks on interactive elements
+    if (e.target.closest("button, a, input, label, .img-upload-overlay"))
+      return;
+
+    const checklist = card.querySelector(".checklist-panel");
+    if (checklist) {
+      const wasOpen = checklist.classList.contains("open");
+
+      // Close all open checklists
+      document.querySelectorAll(".checklist-panel.open").forEach((panel) => {
+        panel.classList.remove("open");
+      });
+
+      // If it wasn't open before, open it now
+      if (!wasOpen) {
+        checklist.classList.add("open");
+      }
+    }
+  });
+
+  // --- Event: Image upload overlay click ---
+  const imgOverlay = card.querySelector(".img-upload-overlay");
+  const imgInput = card.querySelector(".card-image-input");
+  if (imgOverlay && imgInput) {
+    imgOverlay.addEventListener("click", (e) => {
+      e.stopPropagation();
+      imgInput.click();
+    });
+
+    imgInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const res = await fetch("/api/plants/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+
+        // Save imageUrl to database
+        await fetch(`/api/user/plants/${plant.id}/image`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrl: data.imageUrl,
+          }),
+        });
+
+        // Update image in DOM immediately
+        const img = card.querySelector(".plant-img-wrapper img");
+        if (img) img.src = data.imageUrl;
+      } catch (err) {
+        console.error("Image upload error:", err);
+        alert("Failed to upload image. Please try again.");
+      }
     });
   }
 
-  // Attach delete listener — stops propagation so it doesn't trigger the toggle
-  const deleteBtn = card.querySelector(".btn-delete");
+  // --- Event: Watering checkbox ---
+  const waterCheckbox = card.querySelector(".water-checkbox");
+  if (waterCheckbox) {
+    waterCheckbox.addEventListener("change", (e) => {
+      updatePlantWateredState(plant.id, e.target.checked);
+      const badge = card.querySelector(`#water-badge-${plant.id}`);
+      if (badge) {
+        if (e.target.checked) {
+          badge.classList.add("resolved");
+          badge.textContent = "✓ Watered";
+        } else {
+          badge.classList.remove("resolved");
+          badge.textContent = "💧 Needs Water";
+        }
+      }
+    });
+  }
+
+  // --- Event: Edit details button ---
+  const editBtn = card.querySelector(".btn-edit-card");
+  if (editBtn) {
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditModal(plant);
+    });
+  }
+
+  // --- Event: Misting checkbox ---
+  const mistingCheckbox = card.querySelector(".misting-checkbox");
+  if (mistingCheckbox) {
+    mistingCheckbox.addEventListener("change", (e) => {
+      updatePlantMistedState(plant.id, e.target.checked);
+    });
+  }
+
+  // --- Event: Rotate checkbox ---
+  const rotateCheckbox = card.querySelector(".rotate-checkbox");
+  if (rotateCheckbox) {
+    rotateCheckbox.addEventListener("change", (e) => {
+      updatePlantRotatedState(plant.id, e.target.checked);
+    });
+  }
+
+  // --- Event: Harvest checkbox ---
+  const harvestCheckbox = card.querySelector(".harvest-checkbox");
+  if (harvestCheckbox) {
+    harvestCheckbox.addEventListener("change", (e) => {
+      updatePlantHarvestedState(plant.id, e.target.checked);
+      const badge = card.querySelector(`#harvest-badge-${plant.id}`);
+      const label = card.querySelector(
+        `label[for="check-harvest-${plant.id}"]`,
+      );
+      if (badge) {
+        if (e.target.checked) {
+          badge.style.display = "";
+          badge.classList.add("resolved");
+          badge.textContent = "✓ Harvested";
+          if (label) label.textContent = "Plant Harvested!";
+        } else {
+          badge.classList.remove("resolved");
+          badge.textContent = "🌾 Ready to Harvest";
+          if (label) label.textContent = "Your Plant is Ready to Harvest!";
+          if (!isReadyToHarvest) {
+            badge.style.display = "none";
+          } else {
+            badge.style.display = "";
+          }
+        }
+      }
+    });
+  }
+
+  // --- Event: Delete button ---
+  const deleteBtn = card.querySelector(".btn-delete-card");
   if (deleteBtn) {
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -179,24 +452,83 @@ function createPlantCard(plant) {
 }
 
 // Remove a plant by id from storage and re-render the list
-function deletePlant(id) {
-  const plants = loadPlants().filter((p) => p.id !== id);
-  savePlants(plants);
-  renderPlants();
-}
+async function deletePlant(id) {
+  try {
+    const response = await fetch(`/api/user/plants/${id}`, {
+      method: "DELETE",
+    });
 
-// Update the watering state of a plant
-function updatePlantWateredState(id, isWatered) {
-  const plants = loadPlants();
-  const index = plants.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    plants[index].lastWateredAt = isWatered ? new Date().toISOString() : null;
-    savePlants(plants);
+    if (!response.ok) {
+      throw new Error("Delete failed");
+    }
+
+    await renderPlants();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete plant");
   }
 }
 
+// Send a generic update to a user plant record
+async function updatePlant(id, updates) {
+  try {
+    const response = await fetch(`/api/user/plants/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update plant");
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Update the watering state of a plant
+async function updatePlantWateredState(id, isWatered) {
+  await updatePlant(id, {
+    lastWateredAt: isWatered ? new Date().toISOString() : null,
+  });
+}
+
+// Update the shade state of a plant
+async function updatePlantShadeState(id, inShade) {
+  await updatePlant(id, {
+    movedToShadeAt: inShade ? new Date().toISOString() : null,
+  });
+}
+
+// Update the misted state of a plant
+async function updatePlantMistedState(id, isMisted) {
+  await updatePlant(id, {
+    lastMistedAt: isMisted ? new Date().toISOString() : null,
+  });
+}
+
+// Update the rotated state of a plant
+async function updatePlantRotatedState(id, isRotated) {
+  await updatePlant(id, {
+    lastRotatedAt: isRotated ? new Date().toISOString() : null,
+  });
+}
+
+// Helper function removed - using DB values
+
+// Update the harvested state of a plant
+async function updatePlantHarvestedState(id, isHarvested) {
+  await updatePlant(id, {
+    lastHarvestedAt: isHarvested ? new Date().toISOString() : null,
+  });
+}
+
+// Helper function removed - using DB values
+
 function getIntervalDays(freqStr) {
-  if (!freqStr) return 7;
+  if (!freqStr || typeof freqStr !== "string") return 7;
   const str = freqStr.toLowerCase();
   if (str.includes("day") && str.includes("2")) return 2;
   if (str.includes("day") && str.includes("3")) return 3;
@@ -208,19 +540,44 @@ function getIntervalDays(freqStr) {
   return 7; // default to 1 week
 }
 
+// Helper function removed - using DB values
+
+// Update temperature alerts for all rendered cards dynamically
+// Adapted from AI, used to show temperature alerts for plants
+// Modified by: Harun Yaprak
+async function updateTemperatureAlerts() {
+  if (typeof window.currentTemperature === "undefined") return;
+  const plants = await loadPlants();
+  const now = Date.now();
+  plants.forEach((plant) => {
+    const plantTypeInfo =
+      availablePlantTypes.find((p) => p.name === plant.species) || {};
+    const maxTemp = plantTypeInfo.temp || 25;
+    const isTooHot = window.currentTemperature > maxTemp;
+
+    // Toggle Sun Badge
+    const sunBadge = document.getElementById(`sun-badge-${plant.id}`);
+    if (sunBadge) {
+      sunBadge.style.display = isTooHot ? "" : "none";
+    }
+  });
+}
+
 // Render all plants from storage into #plantList
-function renderPlants() {
+async function renderPlants() {
   const list = document.getElementById("plantList");
   list.innerHTML = ""; // clear existing cards
 
-  const plants = loadPlants();
+  const plants = await loadPlants();
 
   if (plants.length === 0) {
-    // Show a friendly empty state message
+    // Show a friendly empty state
     list.innerHTML = `
-      <p style="text-align:center; color:#687d31; margin-top:32px; font-size:0.9rem;">
-        No plants yet — tap <strong>+</strong> to add your first one!
-      </p>
+      <div class="empty-state">
+        <span class="empty-state-icon">🌱</span>
+        <h3 class="empty-state-title">No plants yet</h3>
+        <p class="empty-state-text">Tap the <strong>+</strong> button below to add your first plant and start your green journey!</p>
+      </div>
     `;
     return;
   }
@@ -231,7 +588,47 @@ function renderPlants() {
 }
 
 /* -------------------------------------------------------
-   4. ADD PLANT MODAL
+   4. IMAGE UPLOAD HELPERS
+   Handles image preview in the Add Plant modal
+------------------------------------------------------- */
+
+// Selected file reference for upload
+let selectedPlantImageFile = null;
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  selectedPlantImageFile = file;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const preview = document.getElementById("imagePreview");
+    const container = document.getElementById("imagePreviewContainer");
+    const uploadArea = document.getElementById("imageUploadArea");
+
+    preview.src = e.target.result;
+    container.style.display = "block";
+    uploadArea.style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImagePreview() {
+  selectedPlantImageFile = null;
+  const preview = document.getElementById("imagePreview");
+  const container = document.getElementById("imagePreviewContainer");
+  const uploadArea = document.getElementById("imageUploadArea");
+  const fileInput = document.getElementById("plantImage");
+
+  preview.src = "";
+  container.style.display = "none";
+  uploadArea.style.display = "block";
+  fileInput.value = "";
+}
+
+/* -------------------------------------------------------
+   5. ADD PLANT MODAL
    The FAB (+) opens a bottom-sheet modal.
    On save, a new plant is added to storage and the list
    is re-rendered without a page reload.
@@ -266,7 +663,7 @@ async function fetchPlantTypes() {
 }
 
 // Create a new plant object and persist it, then refresh the list
-function savePlant() {
+async function savePlant() {
   const speciesSelect = document.getElementById("plantSpecies");
   const speciesId = speciesSelect.value;
   const nickname = document.getElementById("plantName").value.trim();
@@ -276,29 +673,163 @@ function savePlant() {
     return; // do nothing if species is not selected
   }
 
-  const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
-  const plants = loadPlants();
+  const btnSave = document.getElementById("btnSave");
+  const originalText = btnSave.innerHTML;
 
-  const newPlant = {
-    id: Date.now(), // unique numeric id based on timestamp
-    species: selectedType.name,
-    nickname: nickname,
-    waterFreq: selectedType.waterFreq,
-    intervalDays: getIntervalDays(selectedType.waterFreq),
-    addedAt: new Date().toISOString(),
-    lastWateredAt: null,
-  };
+  // Show loading state
+  btnSave.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+  btnSave.disabled = true;
 
-  plants.push(newPlant);
-  savePlants(plants);
+  try {
+    const selectedType = availablePlantTypes.find((p) => p._id === speciesId);
 
-  // Close the bootstrap modal
-  const modalEl = document.getElementById("addPlantModal");
-  const modal =
-    bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-  modal.hide();
+    let imageUrl = null;
 
-  renderPlants(); // refresh the list to show the new card
+    // Upload image if one was selected
+    if (selectedPlantImageFile) {
+      const formData = new FormData();
+      formData.append("image", selectedPlantImageFile);
+
+      const res = await fetch("/api/plants/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Image upload failed");
+      }
+
+      const data = await res.json();
+      imageUrl = data.imageUrl;
+      if (!imageUrl) {
+        throw new Error("Image upload response did not include imageUrl");
+      }
+    }
+
+    const newPlant = {
+      id: Date.now(), // unique numeric id based on timestamp
+      species: selectedType.name,
+      slug: selectedType.slug,
+      nickname: nickname,
+      waterFreq: selectedType.waterFreq,
+      imageUrl,
+      intervalDays:
+        typeof selectedType.waterFreq === "number"
+          ? selectedType.waterFreq
+          : getIntervalDays(selectedType.waterFreq),
+      addedAt: new Date().toISOString(),
+      lastWateredAt: null,
+      lastMistedAt: null,
+      lastRotatedAt: null,
+      lastHarvestedAt: null,
+    };
+
+    console.log("Saving new plant:", newPlant);
+    const response = await fetch("/api/user/plants", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newPlant),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save plant");
+    }
+
+    // Close the bootstrap modal
+    const modalEl = document.getElementById("addPlantModal");
+    const modal =
+      bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.hide();
+
+    // Reset image upload state
+    selectedPlantImageFile = null;
+
+    renderPlants(); // refresh the list to show the new card
+  } catch (err) {
+    console.error("Error saving plant:", err);
+    alert("An error occurred while saving the plant.");
+  } finally {
+    // Restore button state
+    btnSave.innerHTML = originalText;
+    btnSave.disabled = false;
+  }
+}
+
+/* -------------------------------------------------------
+   6. EDIT PLANT MODAL
+   Opens a modal pre-populated with the plant's current
+   nickname and water frequency. On save, PATCHes the
+   record and re-renders the plant list.
+------------------------------------------------------- */
+
+function openEditModal(plant) {
+  // Pre-populate fields
+  document.getElementById("editPlantId").value = plant.id;
+  document.getElementById("editPlantNickname").value = plant.nickname || "";
+
+  // Resolve current interval days
+  let currentDays = plant.intervalDays;
+  if (!currentDays) {
+    currentDays = typeof plant.waterFreq === "number"
+      ? plant.waterFreq
+      : getIntervalDays(plant.waterFreq);
+  }
+  document.getElementById("editPlantWaterFreq").value = currentDays || 7;
+
+  // Open modal
+  const modalEl = document.getElementById("editPlantModal");
+  const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+async function saveEditPlant() {
+  const id = document.getElementById("editPlantId").value;
+  const nickname = document.getElementById("editPlantNickname").value.trim();
+  const freqInput = document.getElementById("editPlantWaterFreq").value;
+  const intervalDays = parseInt(freqInput, 10);
+
+  if (!id) return;
+
+  if (isNaN(intervalDays) || intervalDays < 1) {
+    document.getElementById("editPlantWaterFreq").focus();
+    return;
+  }
+
+  const btnEditSave = document.getElementById("btnEditSave");
+  const originalText = btnEditSave.innerHTML;
+  btnEditSave.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+  btnEditSave.disabled = true;
+
+  try {
+    const response = await fetch(`/api/user/plants/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nickname,
+        intervalDays,
+        waterFreq: intervalDays,
+      }),
+    });
+
+    if (!response.ok) throw new Error("Failed to update plant");
+
+    // Close modal
+    const modalEl = document.getElementById("editPlantModal");
+    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.hide();
+
+    await renderPlants();
+  } catch (err) {
+    console.error("Error updating plant:", err);
+    alert("An error occurred while saving changes.");
+  } finally {
+    btnEditSave.innerHTML = originalText;
+    btnEditSave.disabled = false;
+  }
 }
 
 // User Guide Walkthrough Logic
@@ -349,26 +880,33 @@ function navigateGuide(direction) {
 }
 
 function initModal() {
-  fetchPlantTypes();
-
   // Clear modal inputs when it's about to be shown
   const modalEl = document.getElementById("addPlantModal");
   if (modalEl) {
     modalEl.addEventListener("show.bs.modal", () => {
       document.getElementById("plantName").value = "";
       document.getElementById("plantSpecies").value = "";
+      // Reset image preview
+      removeImagePreview();
     });
   }
 
   // Save button persists the plant
   document.getElementById("btnSave").addEventListener("click", savePlant);
+
+  // Edit modal save button
+  const btnEditSave = document.getElementById("btnEditSave");
+  if (btnEditSave) {
+    btnEditSave.addEventListener("click", saveEditPlant);
+  }
 }
 
 /* -------------------------------------------------------
    INIT — run everything once the DOM is ready
 ------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  loadWeather();
-  renderPlants(); // render saved plants on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadWeather();
+  await fetchPlantTypes(); // Must load plant attributes before rendering cards
+  await renderPlants(); // render saved plants on page load
   initModal(); // wire up the add-plant modal
 });

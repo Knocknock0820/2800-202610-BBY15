@@ -1,0 +1,56 @@
+<!--
+  Partial: navbar.ejs
+  Usage: include('partials/navbar', { showLogout: true, activeLink: 'home' })
+
+  Variables:
+  - showLogout (optional, default false) : renders the Logout button when true
+  - showGuide  (optional, default false) : renders the User Guide (?) button — pass true only on mainpage
+  - activeLink (optional)               : 'home' | 'about' | 'plants'
+                                          marks the matching nav-link as active
+-->
+<nav class="navbar navbar-expand-lg navbar-dark custom-navbar" style="background-color: #19350c;">
+  <div class="container-fluid px-3">
+    <a class="navbar-brand fw-bold app-logo" href="/" style="color: #d5d3cc;">🌱 Sprout</a>
+
+    <div class="d-flex align-items-center">
+      <% if (typeof showGuide !== 'undefined' && showGuide) { %>
+        <!-- User-guide icon — only shown on the main page -->
+        <button class="btn me-2" type="button" data-bs-toggle="modal" data-bs-target="#userGuideModal"
+          style="border: none !important; background: transparent !important; padding: 4px;"
+          id="navGuideBtn" title="User Guide">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+            fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            alt="User Guide" class="nav-guide-icon">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </button>
+      <% } %> 
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link <%= typeof activeLink !== 'undefined' && activeLink === 'home' ? 'active' : '' %>"
+             href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <%= typeof activeLink !== 'undefined' && activeLink === 'about' ? 'active' : '' %>"
+             href="/about">About Us</a>
+        </li>
+        <% if (typeof showLogout !== 'undefined' && showLogout) { %>
+          <li class="nav-item">
+            <form action="/logout" method="POST" class="d-inline">
+              <button type="submit" class="nav-link btn btn-link border-0 text-start" style="color: #ff4d4d;">Logout</button>
+            </form>
+          </li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</nav>
