@@ -161,7 +161,15 @@ app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await plantCollection
       .find({})
-      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1, mistingFreq: 1, harvestDays: 1 })
+      .project({
+        _id: 1,
+        name: 1,
+        waterFreq: 1,
+        slug: 1,
+        temp: 1,
+        mistingFreq: 1,
+        harvestDays: 1,
+      })
       .toArray();
     res.json(plants);
   } catch (err) {
@@ -341,32 +349,65 @@ app.post("/change-password", requiredLogin, async (req, res) => {
 
   if (newPassword !== confirmPassword) {
     const user = await userCollection.findOne({ email: req.session.email });
-    return res.render("profile.ejs", { user, name: req.session.username, error: "New passwords do not match." });
+    return res.render("profile.ejs", {
+      user,
+      name: req.session.username,
+      error: "New passwords do not match.",
+    });
   }
 
   const user = await userCollection.findOne({ email: req.session.email });
   const valid = await bcrypt.compare(currentPassword, user.password);
 
   if (!valid) {
-    return res.render("profile.ejs", { user, name: req.session.username, error: "Current password is incorrect." });
+    return res.render("profile.ejs", {
+      user,
+      name: req.session.username,
+      error: "Current password is incorrect.",
+    });
   }
 
   const hashed = await bcrypt.hash(newPassword, saltRounds);
-  await userCollection.updateOne({ email: req.session.email }, { $set: { password: hashed } });
+  await userCollection.updateOne(
+    { email: req.session.email },
+    { $set: { password: hashed } },
+  );
 
   res.redirect("/profile");
 });
 
-//   Render the community page — fetch 5 random posts from MongoDB
+//   Render the community page — fetch latest 5 posts from MongoDB chronologically
 app.get("/community", requiredLogin, async (req, res) => {
   try {
     const posts = await postCollection
-      .aggregate([{ $sample: { size: 5 } }])
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
       .toArray();
     res.render("community.ejs", { name: req.session.username, posts: posts });
   } catch (err) {
     console.error("Error fetching community posts:", err);
     res.render("community.ejs", { name: req.session.username, posts: [] });
+  }
+});
+
+// API endpoint to fetch paginated community posts
+app.get("/api/community/posts", requiredLogin, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = parseInt(req.query.skip) || 0;
+
+    const posts = await postCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    res.json({ success: true, posts });
+  } catch (err) {
+    console.error("Error fetching paginated community posts:", err);
+    res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
 
