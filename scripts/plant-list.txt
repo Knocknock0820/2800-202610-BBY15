@@ -1,1 +1,59 @@
-Tomato
+Chili Pepper | chili_pepper | 3 | 4 | 32 | 90 | Medium
+
+Green Onion | green_onion | 4 | 7 | 24 | 30 | Easy
+
+Garlic Scallions | garlic_scallions | 5 | 7 | 25 | 21 | Easy
+
+Cherry Tomato | cherry_tomato | 2 | 5 | 30 | 80 | Medium
+
+Sweet Basil | sweet_basil | 3 | 3 | 28 | 60 | Easy
+
+Spearmint | spearmint | 2 | 2 | 26 | 45 | Easy
+
+Chives | chives | 4 | 6 | 24 | 60 | Easy
+
+Flat-Leaf Parsley | parsley | 3 | 4 | 24 | 75 | Medium
+
+English Thyme | thyme | 7 | 10 | 28 | 90 | Easy
+
+Rosemary | rosemary | 10 | 14 | 26 | 120 | Medium
+
+Loose-Leaf Lettuce | lettuce | 3 | 5 | 22 | 45 | Easy
+
+Baby Spinach | spinach | 3 | 4 | 22 | 40 | Easy
+
+Arugula | arugula | 3 | 5 | 22 | 35 | Easy
+
+Kale | kale | 4 | 5 | 24 | 55 | Easy
+
+Radish | radish | 3 | 7 | 22 | 25 | Easy
+
+Baby Carrots | carrots | 4 | 7 | 24 | 70 | Medium
+
+Ginger Root | ginger | 5 | 2 | 30 | 240 | Hard
+
+Bush Beans | bush_beans | 3 | 6 | 28 | 60 | Easy
+
+Micro Tomatoes | micro_tomatoes | 2 | 5 | 30 | 70 | Medium
+
+Dwarf Peas | dwarf_peas | 3 | 6 | 23 | 60 | Medium
+
+Cilantro | cilantro | 3 | 5 | 24 | 50 | Hard
+
+Oregano | oregano | 7 | 10 | 28 | 80 | Easy
+
+Meyer Lemon | meyer_lemon | 6 | 2 | 32 | 365 | Hard
+
+Alpine Strawberries | strawberries | 3 | 4 | 26 | 120 | Hard
+
+Watercress | watercress | 1 | 2 | 22 | 30 | Medium
+
+Swiss Chard | swiss_chard | 3 | 5 | 24 | 50 | Easy
+
+Microgreens Blend | microgreens | 2 | 2 | 24 | 14 | Easy
+
+Lemon Balm | lemon_balm | 3 | 4 | 25 | 60 | Easy
+
+Snack Cucumber | snack_cucumber | 2 | 3 | 30 | 65 | Hard
+
+Garden Sage | sage | 7 | 10 | 26 | 85 | Easy

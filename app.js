@@ -161,7 +161,15 @@ app.get("/api/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await plantCollection
       .find({})
-      .project({ _id: 1, name: 1, waterFreq: 1, slug: 1, temp: 1, mistingFreq: 1, harvestDays: 1 })
+      .project({
+        _id: 1,
+        name: 1,
+        waterFreq: 1,
+        slug: 1,
+        temp: 1,
+        mistingFreq: 1,
+        harvestDays: 1,
+      })
       .toArray();
     res.json(plants);
   } catch (err) {
@@ -341,18 +349,29 @@ app.post("/change-password", requiredLogin, async (req, res) => {
 
   if (newPassword !== confirmPassword) {
     const user = await userCollection.findOne({ email: req.session.email });
-    return res.render("profile.ejs", { user, name: req.session.username, error: "New passwords do not match." });
+    return res.render("profile.ejs", {
+      user,
+      name: req.session.username,
+      error: "New passwords do not match.",
+    });
   }
 
   const user = await userCollection.findOne({ email: req.session.email });
   const valid = await bcrypt.compare(currentPassword, user.password);
 
   if (!valid) {
-    return res.render("profile.ejs", { user, name: req.session.username, error: "Current password is incorrect." });
+    return res.render("profile.ejs", {
+      user,
+      name: req.session.username,
+      error: "Current password is incorrect.",
+    });
   }
 
   const hashed = await bcrypt.hash(newPassword, saltRounds);
-  await userCollection.updateOne({ email: req.session.email }, { $set: { password: hashed } });
+  await userCollection.updateOne(
+    { email: req.session.email },
+    { $set: { password: hashed } },
+  );
 
   res.redirect("/profile");
 });
@@ -534,6 +553,10 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
       return res.status(404).render("404");
     }
 
+    if (!plant.heroImage) {
+      return res.redirect(`/details-loading/${slug}`);
+    }
+
     // Convert markdown description to HTML
     let descriptionHtml = "";
     if (plant.description) {
@@ -561,6 +584,27 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching plant details:", err);
+    res.status(500).render("404");
+  }
+});
+
+// Render a temporary loading page when a plant is missing a hero image
+app.get("/details-loading/:slug", requiredLogin, async (req, res) => {
+  const slug = req.params.slug;
+
+  try {
+    const plant = await plantCollection.findOne({ slug });
+
+    if (!plant) {
+      return res.status(404).render("404");
+    }
+
+    res.render("details_loading.ejs", {
+      species: plant.name,
+      slug,
+    });
+  } catch (err) {
+    console.error("Error rendering details loading page:", err);
     res.status(500).render("404");
   }
 });

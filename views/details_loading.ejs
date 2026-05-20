@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('partials/head', { title: (species || 'Plant' ) + ' Loading' , pageCSS: '/css/details.css' }) %>
+        <link rel="stylesheet" href="/css/mainpage.css" />
+</head>
+
+<body>
+    <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
+
+        <main class="container my-5 py-4">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <div class="card detail-card border life-cycle-container shadow-sm text-center p-4">
+                        <div class="card-body">
+                            <h2 class="section-title mb-3">Loading Plant Details</h2>
+                            <p class="mb-4" style="color: #687d31; font-size: 1rem;">
+                                <%= species || 'This plant' %> does not have a hero image yet.
+                            </p>
+
+                            <a href="/details/<%= slug %>" class="btn btn-success px-4 py-2 fw-bold"
+                                style="background-color: #19350c; border-color: #19350c;">
+                                Go to Details Page
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <%- include('partials/footer', { showBottomNav: true, activeTab: '' }) %>
+</body>
+
+</html>
