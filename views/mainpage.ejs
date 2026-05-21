@@ -40,6 +40,13 @@
   <!-- code adopted from bootstrap : https://getbootstrap.com/docs/5.3/components/modal/
     Modified by: Harun Yaprak -->
   <!-- ===== ADD PLANT MODAL (Bootstrap native) ===== -->
+  <!--
+    Add Plant Modal:
+    - Purpose: Collects a species selection, an optional nickname, and an optional photo for a new plant.
+    - Behaviour: The "Save Plant" action and image handling are implemented in /js/main.js.
+    - Implementation notes: Species list is populated asynchronously; keep the id attributes
+      (plantSpecies, plantName, plantImage, imagePreview, btnSave) for JS hooks.
+  -->
   <div class="modal fade modal-add-plant" id="addPlantModal" tabindex="-1" aria-labelledby="addPlantModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
