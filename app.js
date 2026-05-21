@@ -110,8 +110,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "community_uploads", // Cloudinary'de açılacak klasör adı
-    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"], // heic iPhone fotoğrafları için önemlidir
+    folder: "community_uploads",
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "heic"], 
   },
 });
 
@@ -403,8 +403,8 @@ app.post(
       }
 
       await userCollection.updateOne(
-        { email: req.session.email }, // find the logged-in user
-        { $set: updates }, // update only the profile fields, leave email/password untouched
+        { email: req.session.email }, 
+        { $set: updates },
       );
 
       res.redirect("/profile");
@@ -565,8 +565,9 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
   }
 });
 
-// store users plants in the database
-// BY Justin with AI help.
+// Store users plants in the database
+//adapted from AI code
+// Modified by Justin Watson
 app.post("/api/user/plants", requiredLogin, async (req, res) => {
   try {
     const plant = req.body;
@@ -602,6 +603,8 @@ app.post("/api/user/plants", requiredLogin, async (req, res) => {
 });
 
 // Update a user plant record
+// Adapted from AI
+//Modified by Justin Watson
 app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
   try {
     const plantId = Number(req.params.id);
@@ -654,7 +657,8 @@ app.put("/api/user/plants/:id", requiredLogin, async (req, res) => {
 });
 
 //fetch the users plants stored in the databse
-//by Justin with AI help
+// adapted from AI
+// Modified by Justin Watson
 app.get("/api/user/plants", requiredLogin, async (req, res) => {
   try {
     const plants = await userPlantCollection
@@ -669,6 +673,8 @@ app.get("/api/user/plants", requiredLogin, async (req, res) => {
 });
 
 //delete user plants from database.
+// adapted from AI
+// Modified by Justin Watson
 app.delete("/api/user/plants/:id", requiredLogin, async (req, res) => {
   try {
     const plantId = Number(req.params.id);
@@ -691,7 +697,8 @@ app.delete("/api/user/plants/:id", requiredLogin, async (req, res) => {
 });
 
 //watering save in database.
-//Justin with AI help.
+// adapted from AI
+// Modified by Justin Watson
 app.patch("/api/user/plants/:id/water", requiredLogin, async (req, res) => {
   try {
     const plantId = Number(req.params.id);
@@ -720,8 +727,9 @@ app.patch("/api/user/plants/:id/water", requiredLogin, async (req, res) => {
   }
 });
 
-//handle shade to database
-//justin with Ai
+//handle updating Shade state in database
+// adapted from AI
+// Modified by Justin Watson
 app.patch("/api/user/plants/:id/shade", requiredLogin, async (req, res) => {
   try {
     const plantId = Number(req.params.id);
@@ -745,8 +753,9 @@ app.patch("/api/user/plants/:id/shade", requiredLogin, async (req, res) => {
   }
 });
 
-//store images into database
-//justin with AI
+//store users plant images into database
+// adapted from AI
+// Modified by Justin Watson
 app.patch("/api/user/plants/:id/image", requiredLogin, async (req, res) => {
   try {
     const plantId = Number(req.params.id);
