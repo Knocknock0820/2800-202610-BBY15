@@ -9,15 +9,29 @@
 <body>
     <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
 
-        <main class="container my-5 py-4">
+        <main class="container mt-3 mb-4 py-3">
             <div class="row justify-content-center">
                 <div class="col-12 col-md-8 col-lg-6">
                     <div class="card detail-card border life-cycle-container shadow-sm text-center p-4">
                         <div class="card-body">
-                            <h2 class="section-title mb-3">Loading Plant Details</h2>
-                            <p class="mb-4" style="color: #687d31; font-size: 1rem;">
-                                <%= species || 'This plant' %> does not have a hero image yet.
+                            <h2 class="section-title mb-2">Wow, congratulations!</h2>
+                            <p class="mb-4 loading-story-text">
+                                You're one of the first people to discover <strong><%= species || 'this plant' %></strong>.
+                                Click <strong>"Pour the Water"</strong> and watch it grow stage by stage.
                             </p>
+
+                            <div class="generation-actions mb-4">
+                                <button type="button" id="generateButton" class="water-can-button">
+                                    <img src="/images/water_can.png" alt="Water can" class="water-can-icon" />
+                                    <span>Pour the Water</span>
+                                </button>
+                            </div>
+
+                            <div class="growth-scene mb-4" aria-label="Plant growth animation">
+                                <img src="/images/ground.png" alt="Ground" class="growth-ground" />
+                                <img src="/images/muscle_sprout.png" alt="Sprout" class="growth-sprout" id="growthSprout" />
+                                <img src="/images/shinning_star.png" alt="Shining star" class="growth-star" id="growthStar" />
+                            </div>
 
                             <div class="generation-progress-shell mb-4 text-start">
                                 <div class="generation-progress-meta mb-2">
@@ -48,10 +62,12 @@
                                 </div>
                                 <% } %>
 
-                                    <button type="button" id="generateButton" class="btn btn-success px-4 py-2 fw-bold"
-                                        style="background-color: #19350c; border-color: #19350c;">
-                                        Generate and Upload
-                                    </button>
+                            <div class="generation-actions">
+                                <a href="/details/<%= slug %>" id="finishButton" class="btn btn-success px-4 py-2 fw-bold d-none"
+                                    style="background-color: #19350c; border-color: #19350c;">
+                                    Reveal Full Details
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -77,9 +93,61 @@
                 const progressStepText = document.getElementById('generationStepText');
                 const progressStepCount = document.getElementById('generationStepCount');
                 const errorBox = document.getElementById('generationError');
+                const finishButton = document.getElementById('finishButton');
+                const growthSprout = document.getElementById('growthSprout');
+                const growthStar = document.getElementById('growthStar');
 
                 let progressTimer = null;
                 let generationRequested = false;
+
+                function getNarrativeMessage(state, percentage) {
+                    if (state?.error) {
+                        return state.error;
+                    }
+
+                    if (state?.done) {
+                        return `Boom! ${speciesName(state)} is fully grown. Tap Reveal Full Details.`;
+                    }
+
+                    if (!state?.running && percentage === 0) {
+                        return `Ready when you are. Pour water to awaken ${speciesName(state)}.`;
+                    }
+
+                    if (percentage < 35) {
+                        return `Tiny roots are waking up for ${speciesName(state)}...`;
+                    }
+
+                    if (percentage < 70) {
+                        return `${speciesName(state)} is stretching up fast. Keep watering!`;
+                    }
+
+                    return `${speciesName(state)} is almost ready. Final polish underway...`;
+                }
+
+                function speciesName() {
+                    return <%- JSON.stringify(species || 'this plant') %>;
+                }
+
+                function updateGrowthVisual(percentage, isComplete) {
+                    const normalized = Math.max(0, Math.min(percentage, 100));
+                    const maxHiddenShift = 220;
+                    const verticalShift = Math.round(
+                        maxHiddenShift * (1 - normalized / 100),
+                    );
+
+                    growthSprout.style.transform = `translate(-50%, ${verticalShift}px)`;
+                    growthSprout.style.opacity = '1';
+
+                    if (isComplete) {
+                        growthStar.classList.add('is-visible');
+                    } else {
+                        growthStar.classList.remove('is-visible');
+                    }
+                }
+
+                function setFinishVisible(show) {
+                    finishButton.classList.toggle('d-none', !show);
+                }
 
                 function renderProgress(state) {
                     const total = state?.total || 8;
@@ -96,11 +164,16 @@
                         : state?.running
                             ? 'Working...'
                             : 'Waiting to start';
-                    progressStatus.textContent = state?.message || 'Ready to generate.';
+                    progressStatus.textContent = getNarrativeMessage(state, percentage);
+                    if (state?.running || state?.done || percentage > 0) {
+                        updateGrowthVisual(percentage, isComplete);
+                    }
+                    setFinishVisible(isComplete);
 
                     if (state?.error) {
                         errorBox.textContent = state.error;
                         errorBox.classList.remove('d-none');
+                        setFinishVisible(false);
                     } else {
                         errorBox.textContent = '';
                         errorBox.classList.add('d-none');
@@ -120,7 +193,6 @@
                         if (state?.done && state?.current >= state?.total) {
                             clearInterval(progressTimer);
                             progressTimer = null;
-                            window.location.assign(`/details/${slug}`);
                         }
                     } catch {
                         // Keep the existing UI state if polling fails briefly.
@@ -177,7 +249,6 @@
 
                         stopPolling();
                         renderProgress(payload.progress || initialProgress);
-                        window.location.assign(payload.redirectUrl || `/details/${slug}`);
                     } catch (error) {
                         stopPolling();
                         generationRequested = false;
@@ -198,9 +269,7 @@
                 if (initialProgress?.running) {
                     startPolling();
                 } else if (initialProgress?.done && initialProgress?.current >= initialProgress?.total) {
-                    window.setTimeout(() => {
-                        window.location.assign(`/details/${slug}`);
-                    }, 500);
+                    setFinishVisible(true);
                 }
             </script>
 </body>

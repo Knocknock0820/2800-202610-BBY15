@@ -122,7 +122,7 @@ async function callGemini(model, body, retries = 0, maxRetries = 3) {
 async function generateDescription(plantName, onProgress) {
   const prompt = [
     `Create a comprehensive Markdown care guide for the plant "${plantName}" similar to a professional botanical wiki.`,
-    "Include the following sections: Overview, Light, Water,Humidity & Temperature, Soil, Support & Growth, Common Problems (as a table), and Pet Safety.",
+    "Include the following sections: Overview, Light, Water,Humidity & Temperature, Soil, Support & Growth, Common Problems (as a table), Pet Safety, and disclaimer that showing it is generated content which will have some wrong information, search on wikipedia to get more information.",
     "Use professional, helpful formatting with headers (##), bold text, and bullet points.",
   ].join(" ");
 

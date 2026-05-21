@@ -638,6 +638,10 @@ app.get("/details-loading/:slug", requiredLogin, async (req, res) => {
       return res.status(404).render("404");
     }
 
+    if (plant.heroImage) {
+      return res.redirect(`/details/${slug}`);
+    }
+
     res.render("details_loading.ejs", {
       species: plant.name,
       slug,
