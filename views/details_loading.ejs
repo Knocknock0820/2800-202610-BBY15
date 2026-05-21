@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('partials/head', { title: (species || 'Plant' ) + ' Loading' , pageCSS: '/css/details.css' }) %>
+        <link rel="stylesheet" href="/css/mainpage.css" />
+</head>
+
+<body>
+    <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
+
+        <main class="container mt-3 mb-4 py-3">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <div class="card detail-card border life-cycle-container shadow-sm text-center p-4">
+                        <div class="card-body">
+                            <h2 class="section-title mb-2">Wow, congratulations!</h2>
+                            <p class="mb-4 loading-story-text">
+                                You're one of the first people to discover <strong><%= species || 'this plant' %></strong>.
+                                Click <strong>"Pour the Water"</strong> and watch it grow stage by stage.
+                            </p>
+
+                            <div class="generation-actions mb-4">
+                                <button type="button" id="generateButton" class="water-can-button">
+                                    <img src="/images/water_can.png" alt="Water can" class="water-can-icon" />
+                                    <span>Pour the Water</span>
+                                </button>
+                            </div>
+
+                            <div class="growth-scene mb-4" aria-label="Plant growth animation">
+                                <img src="/images/ground.png" alt="Ground" class="growth-ground" />
+                                <img src="/images/muscle_sprout.png" alt="Sprout" class="growth-sprout" id="growthSprout" />
+                                <img src="/images/shinning_star.png" alt="Shining star" class="growth-star" id="growthStar" />
+                            </div>
+
+                            <div class="generation-progress-shell mb-4 text-start">
+                                <div class="generation-progress-meta mb-2">
+                                    <span id="generationStepText">Step 0 of 8</span>
+                                    <span id="generationStepCount">Waiting to start</span>
+                                </div>
+
+                                <div class="progress generation-progress" style="height: 1rem;">
+                                    <div id="generationProgressBar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                                        style="width: 0%; background-color: #19350c;">
+                                        0%
+                                    </div>
+                                </div>
+
+                                <p class="generation-status mt-3 mb-0" id="generationStatus">
+                                    <%= (progress && progress.message) ? progress.message : 'Ready to generate.' %>
+                                </p>
+
+                                <div class="alert alert-danger d-none mt-3 mb-0" id="generationError" role="alert">
+                                </div>
+                            </div>
+
+                            <% if (typeof errorMessage !=='undefined' && errorMessage) { %>
+                                <div class="alert alert-warning text-start" role="alert">
+                                    <%= errorMessage %>
+                                </div>
+                                <% } %>
+
+                            <div class="generation-actions">
+                                <a href="/details/<%= slug %>" id="finishButton" class="btn btn-success px-4 py-2 fw-bold d-none"
+                                    style="background-color: #19350c; border-color: #19350c;">
+                                    Reveal Full Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <%- include('partials/footer', { showBottomNav: true, activeTab: '' }) %>
+
+            <script>
+                const slug = <%- JSON.stringify(slug) %>;
+                const initialProgress = <%- JSON.stringify(progress || {
+                    current: 0,
+                    total: 8,
+                    message: 'Ready to generate.',
+                    running: false,
+                    done: false,
+                    error: null,
+                }) %>;
+
+                const generateButton = document.getElementById('generateButton');
+                const progressBar = document.getElementById('generationProgressBar');
+                const progressStatus = document.getElementById('generationStatus');
+                const progressStepText = document.getElementById('generationStepText');
+                const progressStepCount = document.getElementById('generationStepCount');
+                const errorBox = document.getElementById('generationError');
+                const finishButton = document.getElementById('finishButton');
+                const growthSprout = document.getElementById('growthSprout');
+                const growthStar = document.getElementById('growthStar');
+
+                let progressTimer = null;
+                let generationRequested = false;
+
+                function getNarrativeMessage(state, percentage) {
+                    if (state?.error) {
+                        return state.error;
+                    }
+
+                    if (state?.done) {
+                        return `Boom! ${speciesName(state)} is fully grown. Tap Reveal Full Details.`;
+                    }
+
+                    if (!state?.running && percentage === 0) {
+                        return `Ready when you are. Pour water to awaken ${speciesName(state)}.`;
+                    }
+
+                    if (percentage < 35) {
+                        return `Tiny roots are waking up for ${speciesName(state)}...`;
+                    }
+
+                    if (percentage < 70) {
+                        return `${speciesName(state)} is stretching up fast. Keep watering!`;
+                    }
+
+                    return `${speciesName(state)} is almost ready. Final polish underway...`;
+                }
+
+                function speciesName() {
+                    return <%- JSON.stringify(species || 'this plant') %>;
+                }
+
+                function updateGrowthVisual(percentage, isComplete) {
+                    const normalized = Math.max(0, Math.min(percentage, 100));
+                    const maxHiddenShift = 220;
+                    const verticalShift = Math.round(
+                        maxHiddenShift * (1 - normalized / 100),
+                    );
+
+                    growthSprout.style.transform = `translate(-50%, ${verticalShift}px)`;
+                    growthSprout.style.opacity = '1';
+
+                    if (isComplete) {
+                        growthStar.classList.add('is-visible');
+                    } else {
+                        growthStar.classList.remove('is-visible');
+                    }
+                }
+
+                function setFinishVisible(show) {
+                    finishButton.classList.toggle('d-none', !show);
+                }
+
+                function renderProgress(state) {
+                    const total = state?.total || 8;
+                    const current = Math.max(0, Math.min(state?.current ?? 0, total));
+                    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+                    const isComplete = Boolean(state?.done && current >= total);
+
+                    progressBar.style.width = `${percentage}%`;
+                    progressBar.setAttribute('aria-valuenow', String(percentage));
+                    progressBar.textContent = `${percentage}%`;
+                    progressStepText.textContent = `Step ${current} of ${total}`;
+                    progressStepCount.textContent = isComplete
+                        ? 'Complete'
+                        : state?.running
+                            ? 'Working...'
+                            : 'Waiting to start';
+                    progressStatus.textContent = getNarrativeMessage(state, percentage);
+                    if (state?.running || state?.done || percentage > 0) {
+                        updateGrowthVisual(percentage, isComplete);
+                    }
+                    setFinishVisible(isComplete);
+
+                    if (state?.error) {
+                        errorBox.textContent = state.error;
+                        errorBox.classList.remove('d-none');
+                        setFinishVisible(false);
+                    } else {
+                        errorBox.textContent = '';
+                        errorBox.classList.add('d-none');
+                    }
+                }
+
+                async function refreshProgress() {
+                    try {
+                        const response = await fetch(`/details-loading/${slug}/progress`);
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        const state = await response.json();
+                        renderProgress(state);
+
+                        if (state?.done && state?.current >= state?.total) {
+                            clearInterval(progressTimer);
+                            progressTimer = null;
+                        }
+                    } catch {
+                        // Keep the existing UI state if polling fails briefly.
+                    }
+                }
+
+                function startPolling() {
+                    if (progressTimer) {
+                        return;
+                    }
+
+                    progressTimer = window.setInterval(refreshProgress, 1000);
+                    refreshProgress();
+                }
+
+                function stopPolling() {
+                    if (progressTimer) {
+                        clearInterval(progressTimer);
+                        progressTimer = null;
+                    }
+                }
+
+                generateButton.addEventListener('click', async () => {
+                    if (generationRequested) {
+                        return;
+                    }
+
+                    generationRequested = true;
+                    generateButton.disabled = true;
+                    renderProgress({
+                        current: 0,
+                        total: 8,
+                        message: 'Starting generation...',
+                        running: true,
+                        done: false,
+                        error: null,
+                    });
+
+                    startPolling();
+
+                    try {
+                        const response = await fetch(`/details-loading/${slug}/generate`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        });
+
+                        const payload = await response.json().catch(() => ({}));
+
+                        if (!response.ok) {
+                            throw new Error(payload.error || 'Generation failed.');
+                        }
+
+                        stopPolling();
+                        renderProgress(payload.progress || initialProgress);
+                    } catch (error) {
+                        stopPolling();
+                        generationRequested = false;
+                        generateButton.disabled = false;
+                        renderProgress({
+                            current: 0,
+                            total: 8,
+                            message: error.message || 'Generation failed.',
+                            running: false,
+                            done: false,
+                            error: error.message || 'Generation failed.',
+                        });
+                    }
+                });
+
+                renderProgress(initialProgress);
+
+                if (initialProgress?.running) {
+                    startPolling();
+                } else if (initialProgress?.done && initialProgress?.current >= initialProgress?.total) {
+                    setFinishVisible(true);
+                }
+            </script>
+</body>
+
+</html>

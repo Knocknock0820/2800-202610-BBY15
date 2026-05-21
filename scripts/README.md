@@ -64,13 +64,13 @@ Generate a short plant description with Gemini and download a matching plant pho
 ### Usage
 
 ```bash
-node scripts/testGeminiPlant.js <plant name>
+node scripts/testGeminiPlant.js <plant name> [slug]
 ```
 
 ### Example
 
 ```bash
-node scripts/testGeminiPlant.js monstera deliciosa
+node scripts/testGeminiPlant.js "Flat-Leaf Parsley" parsley
 ```
 
 ### Output
