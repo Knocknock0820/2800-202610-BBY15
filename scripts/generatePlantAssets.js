@@ -6,7 +6,7 @@
  * No temporary files are written to disk.
  *
  * Exported functions:
- * - generatePlantAssets(slug, plantName, waterFreq, difficulty)
+ * - generatePlantAssets(slug, plantName, waterFreq, difficulty, plantCollection, options)
  */
 
 require("dotenv").config();
@@ -16,6 +16,7 @@ const cloudinary = require("cloudinary").v2;
 const API_KEY = process.env.GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-3.1-flash-lite";
+const TOTAL_PROGRESS_STEPS = 8;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -73,6 +74,16 @@ function extractErrorMessage(payload) {
   return JSON.stringify(payload);
 }
 
+function reportProgress(onProgress, current, message) {
+  if (typeof onProgress === "function") {
+    onProgress({
+      current,
+      total: TOTAL_PROGRESS_STEPS,
+      message,
+    });
+  }
+}
+
 async function callGemini(model, body, retries = 0, maxRetries = 3) {
   const response = await fetch(buildEndpoint(model), {
     method: "POST",
@@ -108,7 +119,7 @@ async function callGemini(model, body, retries = 0, maxRetries = 3) {
   return payload;
 }
 
-async function generateDescription(plantName) {
+async function generateDescription(plantName, onProgress) {
   const prompt = [
     `Create a comprehensive Markdown care guide for the plant "${plantName}" similar to a professional botanical wiki.`,
     "Include the following sections: Overview, Light, Water,Humidity & Temperature, Soil, Support & Growth, Common Problems (as a table), and Pet Safety.",
@@ -138,6 +149,8 @@ async function generateDescription(plantName) {
       "No text in parts. Finish reason: " + candidate.finishReason,
     );
   }
+
+  reportProgress(onProgress, 1, `Description generated for ${plantName}.`);
 
   return description;
 }
@@ -203,7 +216,7 @@ async function downloadImageAsBuffer(imageUrl) {
   return Buffer.from(arrayBuffer);
 }
 
-async function generateImageBuffers(plantName, slug) {
+async function generateImageBuffers(plantName, slug, onProgress) {
   const usedPhotoIds = new Set();
   const variants = [
     { key: "hero", fileName: `${slug}.jpg` },
@@ -216,7 +229,8 @@ async function generateImageBuffers(plantName, slug) {
 
   const imageBuffers = {};
 
-  for (const variant of variants) {
+  for (let index = 0; index < variants.length; index += 1) {
+    const variant = variants[index];
     const primaryQuery = buildPlantVariantQuery(plantName, variant.key);
 
     let photo;
@@ -252,6 +266,11 @@ async function generateImageBuffers(plantName, slug) {
     };
 
     console.log(`Generated ${variant.key} image for ${plantName}`);
+    reportProgress(
+      onProgress,
+      index + 2,
+      `Generated ${variant.key} image for ${plantName}.`,
+    );
   }
 
   return imageBuffers;
@@ -287,8 +306,15 @@ async function uploadAssetsToDatabase(
   waterFreq,
   difficulty,
   plantCollection,
+  onProgress,
 ) {
   try {
+    reportProgress(
+      onProgress,
+      7,
+      `Uploading generated assets for ${plantName}...`,
+    );
+
     // Upload all images to Cloudinary
     console.log("Uploading images to Cloudinary...");
     const heroUrl = await uploadImageBufferToCloudinary(
@@ -336,6 +362,8 @@ async function uploadAssetsToDatabase(
       console.log(`✅ Plant updated: ${plantName} (${slug})`);
     }
 
+    reportProgress(onProgress, 8, `Saved generated assets for ${plantName}.`);
+
     return {
       slug,
       heroImage: heroUrl,
@@ -354,7 +382,10 @@ async function generatePlantAssets(
   waterFreq,
   difficulty,
   plantCollection,
+  options = {},
 ) {
+  const onProgress = options.onProgress;
+
   if (!API_KEY) {
     throw new Error(
       "Missing GEMINI_API_KEY. Add it to your environment or .env file.",
@@ -373,11 +404,15 @@ async function generatePlantAssets(
   console.log(`   Difficulty: ${difficulty}`);
 
   try {
-    console.log("\n📸 Generating images...");
-    const imageBuffers = await generateImageBuffers(plantName, slug);
-
     console.log("\n📝 Generating description...");
-    const description = await generateDescription(plantName);
+    const description = await generateDescription(plantName, onProgress);
+
+    console.log("\n📸 Generating images...");
+    const imageBuffers = await generateImageBuffers(
+      plantName,
+      slug,
+      onProgress,
+    );
 
     console.log("\n☁️  Uploading to Cloudinary and MongoDB...");
     const result = await uploadAssetsToDatabase(
@@ -388,6 +423,7 @@ async function generatePlantAssets(
       waterFreq,
       difficulty,
       plantCollection,
+      onProgress,
     );
 
     console.log("\n✅ Plant assets generated and stored successfully!\n");

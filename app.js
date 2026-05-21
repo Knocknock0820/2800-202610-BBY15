@@ -55,6 +55,9 @@ const userPlantCollection = database
   .db(mongodb_user_database)
   .collection("user-plants");
 
+const plantGenerationProgress = new Map();
+const GENERATION_TOTAL_STEPS = 8;
+
 // Load plant files and seed on startup
 (async () => {
   try {
@@ -135,6 +138,37 @@ function requiredLogin(req, res, next) {
   } else {
     next();
   }
+}
+
+function getGenerationKey(req, slug) {
+  return `${req.sessionID}:${slug}`;
+}
+
+function getDefaultGenerationProgress() {
+  return {
+    current: 0,
+    total: GENERATION_TOTAL_STEPS,
+    message: "Ready to generate.",
+    running: false,
+    done: false,
+    error: null,
+  };
+}
+
+function getStoredGenerationProgress(key) {
+  return plantGenerationProgress.get(key) || getDefaultGenerationProgress();
+}
+
+function setStoredGenerationProgress(key, patch) {
+  const current = getStoredGenerationProgress(key);
+  const next = {
+    ...current,
+    ...patch,
+    total: patch.total ?? current.total ?? GENERATION_TOTAL_STEPS,
+  };
+
+  plantGenerationProgress.set(key, next);
+  return next;
 }
 
 // ======================================
@@ -552,7 +586,9 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
     const plant = await plantCollection.findOne({ slug });
 
     if (!plant) {
-      return res.status(404).render("404");
+      return res.status(404).json({
+        error: "Plant not found.",
+      });
     }
 
     if (!plant.heroImage) {
@@ -593,6 +629,7 @@ app.get("/details/:slug", requiredLogin, async (req, res) => {
 // Render a temporary loading page when a plant is missing a hero image
 app.get("/details-loading/:slug", requiredLogin, async (req, res) => {
   const slug = req.params.slug;
+  const key = getGenerationKey(req, slug);
 
   try {
     const plant = await plantCollection.findOne({ slug });
@@ -604,6 +641,7 @@ app.get("/details-loading/:slug", requiredLogin, async (req, res) => {
     res.render("details_loading.ejs", {
       species: plant.name,
       slug,
+      progress: getStoredGenerationProgress(key),
     });
   } catch (err) {
     console.error("Error rendering details loading page:", err);
@@ -611,8 +649,16 @@ app.get("/details-loading/:slug", requiredLogin, async (req, res) => {
   }
 });
 
+app.get("/details-loading/:slug/progress", requiredLogin, async (req, res) => {
+  const slug = req.params.slug;
+  const key = getGenerationKey(req, slug);
+
+  res.json(getStoredGenerationProgress(key));
+});
+
 app.post("/details-loading/:slug/generate", requiredLogin, async (req, res) => {
   const slug = req.params.slug;
+  const key = getGenerationKey(req, slug);
 
   try {
     const plant = await plantCollection.findOne({ slug });
@@ -625,6 +671,23 @@ app.post("/details-loading/:slug/generate", requiredLogin, async (req, res) => {
     const waterFreq = plant.waterFreq ?? null;
     const difficulty = plant.difficulty || "Unknown";
 
+    const existingProgress = getStoredGenerationProgress(key);
+    if (existingProgress.running) {
+      return res.status(409).json({
+        error: "Generation is already running.",
+        progress: existingProgress,
+      });
+    }
+
+    setStoredGenerationProgress(key, {
+      current: 0,
+      total: GENERATION_TOTAL_STEPS,
+      message: "Starting generation...",
+      running: true,
+      done: false,
+      error: null,
+    });
+
     // Generate images and description in-memory, upload to Cloudinary, and update MongoDB
     await generatePlantAssets(
       slug,
@@ -632,16 +695,46 @@ app.post("/details-loading/:slug/generate", requiredLogin, async (req, res) => {
       waterFreq,
       difficulty,
       plantCollection,
+      {
+        onProgress: (progress) => {
+          setStoredGenerationProgress(key, {
+            ...progress,
+            running: true,
+            done: false,
+            error: null,
+          });
+        },
+      },
     );
 
-    return res.redirect(`/details/${slug}`);
+    setStoredGenerationProgress(key, {
+      current: GENERATION_TOTAL_STEPS,
+      total: GENERATION_TOTAL_STEPS,
+      message: "Generation complete.",
+      running: false,
+      done: true,
+      error: null,
+    });
+
+    return res.json({
+      ok: true,
+      redirectUrl: `/details/${slug}`,
+      progress: getStoredGenerationProgress(key),
+    });
   } catch (err) {
     console.error("Error generating plant assets:", err);
-    return res.status(500).render("details_loading.ejs", {
-      species: err?.plantName || slug,
-      slug,
-      errorMessage:
+    setStoredGenerationProgress(key, {
+      message: err.message || "Generation failed.",
+      running: false,
+      done: false,
+      error: err.message || "Generation failed.",
+    });
+
+    return res.status(500).json({
+      error:
+        err.message ||
         "Generation failed. Please check your API keys and try again.",
+      progress: getStoredGenerationProgress(key),
     });
   }
 });

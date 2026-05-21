@@ -19,18 +19,39 @@
                                 <%= species || 'This plant' %> does not have a hero image yet.
                             </p>
 
+                            <div class="generation-progress-shell mb-4 text-start">
+                                <div class="generation-progress-meta mb-2">
+                                    <span id="generationStepText">Step 0 of 8</span>
+                                    <span id="generationStepCount">Waiting to start</span>
+                                </div>
+
+                                <div class="progress generation-progress" style="height: 1rem;">
+                                    <div id="generationProgressBar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                                        style="width: 0%; background-color: #19350c;">
+                                        0%
+                                    </div>
+                                </div>
+
+                                <p class="generation-status mt-3 mb-0" id="generationStatus">
+                                    <%= (progress && progress.message) ? progress.message : 'Ready to generate.' %>
+                                </p>
+
+                                <div class="alert alert-danger d-none mt-3 mb-0" id="generationError" role="alert">
+                                </div>
+                            </div>
+
                             <% if (typeof errorMessage !=='undefined' && errorMessage) { %>
                                 <div class="alert alert-warning text-start" role="alert">
                                     <%= errorMessage %>
                                 </div>
                                 <% } %>
 
-                                    <form action="/details-loading/<%= slug %>/generate" method="POST" class="d-inline">
-                                        <button type="submit" class="btn btn-success px-4 py-2 fw-bold"
-                                            style="background-color: #19350c; border-color: #19350c;">
-                                            Generate and Upload
-                                        </button>
-                                    </form>
+                                    <button type="button" id="generateButton" class="btn btn-success px-4 py-2 fw-bold"
+                                        style="background-color: #19350c; border-color: #19350c;">
+                                        Generate and Upload
+                                    </button>
                         </div>
                     </div>
                 </div>
@@ -38,6 +59,150 @@
         </main>
 
         <%- include('partials/footer', { showBottomNav: true, activeTab: '' }) %>
+
+            <script>
+                const slug = <%- JSON.stringify(slug) %>;
+                const initialProgress = <%- JSON.stringify(progress || {
+                    current: 0,
+                    total: 8,
+                    message: 'Ready to generate.',
+                    running: false,
+                    done: false,
+                    error: null,
+                }) %>;
+
+                const generateButton = document.getElementById('generateButton');
+                const progressBar = document.getElementById('generationProgressBar');
+                const progressStatus = document.getElementById('generationStatus');
+                const progressStepText = document.getElementById('generationStepText');
+                const progressStepCount = document.getElementById('generationStepCount');
+                const errorBox = document.getElementById('generationError');
+
+                let progressTimer = null;
+                let generationRequested = false;
+
+                function renderProgress(state) {
+                    const total = state?.total || 8;
+                    const current = Math.max(0, Math.min(state?.current ?? 0, total));
+                    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+                    const isComplete = Boolean(state?.done && current >= total);
+
+                    progressBar.style.width = `${percentage}%`;
+                    progressBar.setAttribute('aria-valuenow', String(percentage));
+                    progressBar.textContent = `${percentage}%`;
+                    progressStepText.textContent = `Step ${current} of ${total}`;
+                    progressStepCount.textContent = isComplete
+                        ? 'Complete'
+                        : state?.running
+                            ? 'Working...'
+                            : 'Waiting to start';
+                    progressStatus.textContent = state?.message || 'Ready to generate.';
+
+                    if (state?.error) {
+                        errorBox.textContent = state.error;
+                        errorBox.classList.remove('d-none');
+                    } else {
+                        errorBox.textContent = '';
+                        errorBox.classList.add('d-none');
+                    }
+                }
+
+                async function refreshProgress() {
+                    try {
+                        const response = await fetch(`/details-loading/${slug}/progress`);
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        const state = await response.json();
+                        renderProgress(state);
+
+                        if (state?.done && state?.current >= state?.total) {
+                            clearInterval(progressTimer);
+                            progressTimer = null;
+                            window.location.assign(`/details/${slug}`);
+                        }
+                    } catch {
+                        // Keep the existing UI state if polling fails briefly.
+                    }
+                }
+
+                function startPolling() {
+                    if (progressTimer) {
+                        return;
+                    }
+
+                    progressTimer = window.setInterval(refreshProgress, 1000);
+                    refreshProgress();
+                }
+
+                function stopPolling() {
+                    if (progressTimer) {
+                        clearInterval(progressTimer);
+                        progressTimer = null;
+                    }
+                }
+
+                generateButton.addEventListener('click', async () => {
+                    if (generationRequested) {
+                        return;
+                    }
+
+                    generationRequested = true;
+                    generateButton.disabled = true;
+                    renderProgress({
+                        current: 0,
+                        total: 8,
+                        message: 'Starting generation...',
+                        running: true,
+                        done: false,
+                        error: null,
+                    });
+
+                    startPolling();
+
+                    try {
+                        const response = await fetch(`/details-loading/${slug}/generate`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        });
+
+                        const payload = await response.json().catch(() => ({}));
+
+                        if (!response.ok) {
+                            throw new Error(payload.error || 'Generation failed.');
+                        }
+
+                        stopPolling();
+                        renderProgress(payload.progress || initialProgress);
+                        window.location.assign(payload.redirectUrl || `/details/${slug}`);
+                    } catch (error) {
+                        stopPolling();
+                        generationRequested = false;
+                        generateButton.disabled = false;
+                        renderProgress({
+                            current: 0,
+                            total: 8,
+                            message: error.message || 'Generation failed.',
+                            running: false,
+                            done: false,
+                            error: error.message || 'Generation failed.',
+                        });
+                    }
+                });
+
+                renderProgress(initialProgress);
+
+                if (initialProgress?.running) {
+                    startPolling();
+                } else if (initialProgress?.done && initialProgress?.current >= initialProgress?.total) {
+                    window.setTimeout(() => {
+                        window.location.assign(`/details/${slug}`);
+                    }, 500);
+                }
+            </script>
 </body>
 
 </html>
