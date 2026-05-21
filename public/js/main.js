@@ -654,10 +654,18 @@ async function fetchPlantTypes() {
     availablePlantTypes = await res.json();
 
     const select = document.getElementById("plantSpecies");
+    if (!select) return;
     select.innerHTML =
       '<option value="" disabled selected>Select a species...</option>';
 
-    availablePlantTypes.forEach((p) => {
+    // Sort plant types alphabetically by name (case-insensitive) before rendering
+    const sortedTypes = availablePlantTypes
+      .slice()
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      );
+
+    sortedTypes.forEach((p) => {
       const option = document.createElement("option");
       option.value = p._id;
       option.textContent = p.name;
