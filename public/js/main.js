@@ -234,7 +234,7 @@ function createPlantCard(plant) {
         <!-- Plant Image -->
         <div class="plant-img-wrapper" id="img-wrapper-${plant.id}">
           <img src="${plantImageUrl}" alt="${speciesName}" 
-               onerror="if(this.src.includes('.jpg')){this.src=this.src.replace('.jpg','.png')}else if(!this.src.includes('error.png')){this.src='/images/error.png'}" />
+               onerror="if(this.src.includes('.jpg')){this.src=this.src.replace('.jpg','.png')}else if(!this.src.includes('upload_plant')){this.src='/images/upload_plant.png'}" />
           <div class="img-upload-overlay" title="Upload photo">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" 
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
