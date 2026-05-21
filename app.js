@@ -7,7 +7,6 @@ require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
-const { execFile } = require("child_process");
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
 const cloudinary = require("cloudinary").v2;
@@ -38,7 +37,8 @@ const node_session_secret = process.env.NODE_SESSION_SECRET;
 
 const { database } = require("./config/MongoDB");
 const e = require("express");
-const execFileAsync = require("util").promisify(execFile);
+const { generatePlantAssets } = require("./scripts/generatePlantAssets");
+
 const userCollection = database
   .db(mongodb_user_database)
   .collection("user-info");
@@ -622,31 +622,16 @@ app.post("/details-loading/:slug/generate", requiredLogin, async (req, res) => {
     }
 
     const plantName = plant.name || slug;
-    const waterFreq = plant.waterFreq ?? "";
+    const waterFreq = plant.waterFreq ?? null;
     const difficulty = plant.difficulty || "Unknown";
 
-    await execFileAsync(
-      process.execPath,
-      [path.join(__dirname, "scripts", "testGeminiPlant.js"), plantName, slug],
-      {
-        cwd: __dirname,
-        maxBuffer: 10 * 1024 * 1024,
-      },
-    );
-
-    await execFileAsync(
-      process.execPath,
-      [
-        path.join(__dirname, "scripts", "addSpecies.js"),
-        plantName,
-        slug,
-        String(waterFreq),
-        difficulty,
-      ],
-      {
-        cwd: __dirname,
-        maxBuffer: 10 * 1024 * 1024,
-      },
+    // Generate images and description in-memory, upload to Cloudinary, and update MongoDB
+    await generatePlantAssets(
+      slug,
+      plantName,
+      waterFreq,
+      difficulty,
+      plantCollection,
     );
 
     return res.redirect(`/details/${slug}`);
