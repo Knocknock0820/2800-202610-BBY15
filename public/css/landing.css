@@ -80,32 +80,32 @@ body {
 
 .plant-frame--tl {
   transform: rotate(-6deg);
-  width: 160px;
-  height: 120px;
+  width: 300px;
+  height: 220px;
   top: 5%;
   left: 2%;
 }
 
 .plant-frame--tr {
   transform: rotate(5deg);
-  width: 160px;
-  height: 120px;
+  width: 300px;
+  height: 220px;
   top: 5%;
   right: 2%;
 }
 
 .plant-frame--bl {
   transform: rotate(4deg);
-  width: 160px;
-  height: 120px;
+  width: 300px;
+  height: 220px;
   bottom: 5%;
   left: 2%;
 }
 
 .plant-frame--br {
   transform: rotate(-4deg);
-  width: 160px;
-  height: 120px;
+  width: 300px;
+  height: 220px;
   bottom: 5%;
   right: 2%;
 }
