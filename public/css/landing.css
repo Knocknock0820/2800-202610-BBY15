@@ -75,7 +75,6 @@ body {
   object-fit: cover;
   display: block;
   opacity: 0.88;
-  transition: opacity 0.4s ease;
 }
 
 .plant-frame--tl {
