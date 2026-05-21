@@ -19,6 +19,8 @@ body {
   min-height: calc(100svh - 56px);
   background: linear-gradient(135deg, rgb(32, 68, 15) 0%, #687d31 100%);
   padding: 40px 16px;
+  position: relative;
+  overflow: hidden;
 }
 
 .hero-section p.lead {
@@ -48,6 +50,102 @@ body {
 
 .btn-outline-light:hover {
   color: #406768;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.plant-frame {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+}
+
+.plant-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.88;
+}
+
+.plant-frame--tl {
+  transform: rotate(-6deg);
+  width: 380px;
+  height: 260px;
+  top: 5%;
+  left: 2%;
+}
+
+.plant-frame--tr {
+  transform: rotate(5deg);
+  width: 380px;
+  height: 260px;
+  top: 5%;
+  right: 2%;
+}
+
+.plant-frame--bl {
+  transform: rotate(4deg);
+  width: 380px;
+  height: 260px;
+  bottom: 5%;
+  left: 2%;
+}
+
+.plant-frame--br {
+  transform: rotate(-4deg);
+  width: 380px;
+  height: 260px;
+  bottom: 5%;
+  right: 2%;
+}
+
+@media (max-width: 575px) {
+  .plant-frame--tl,
+  .plant-frame--bl {
+    display: none;
+  }
+
+  .hero-section {
+    flex-direction: column;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .plant-frame--tr,
+  .plant-frame--br {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    width: 100%;
+    max-width: 340px;
+    height: 140px;
+    border-radius: 14px;
+    margin: 0 auto;
+  }
+
+  .plant-frame--tr {
+    order: 1;
+  }
+
+  .hero-content {
+    order: 2;
+  }
+
+  .plant-frame--br {
+    order: 3;
+  }
 }
 
 @media (min-width: 576px) {

@@ -123,7 +123,13 @@ function createPlantCard(plant) {
   let isWatered = false;
   if (plant.lastWateredAt) {
     const last = new Date(plant.lastWateredAt).getTime();
-    const intervalMs = (plant.intervalDays || 7) * 24 * 60 * 60 * 1000;
+    const intervalDays =
+      plant.intervalDays ||
+      (typeof plant.waterFreq === "number"
+        ? plant.waterFreq
+        : getIntervalDays(plant.waterFreq)) ||
+      7;
+    const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
     if (now - last < intervalMs) {
       isWatered = true;
     }
@@ -216,10 +222,14 @@ function createPlantCard(plant) {
     : "";
 
   // Format water frequency if it's just a number
-  let displayFreq = plant.waterFreq || "Weekly";
-  if (!isNaN(displayFreq) && displayFreq.toString().trim() !== "") {
-    displayFreq = displayFreq == 1 ? "Every day" : `Every ${displayFreq} days`;
-  }
+  const resolvedDays =
+    plant.intervalDays ||
+    (typeof plant.waterFreq === "number"
+      ? plant.waterFreq
+      : getIntervalDays(plant.waterFreq)) ||
+    7;
+  let displayFreq =
+    resolvedDays == 1 ? "Every day" : `Every ${resolvedDays} days`;
 
   wrapper.innerHTML = `
     <div class="plant-card" data-plant-id="${plant.id}">
@@ -235,7 +245,7 @@ function createPlantCard(plant) {
         <!-- Plant Image -->
         <div class="plant-img-wrapper" id="img-wrapper-${plant.id}">
           <img src="${plantImageUrl}" alt="${speciesName}" 
-               onerror="if(this.src.includes('.jpg')){this.src=this.src.replace('.jpg','.png')}else if(!this.src.includes('error.png')){this.src='/images/error.png'}" />
+               onerror="if(this.src.includes('.jpg')){this.src=this.src.replace('.jpg','.png')}else if(!this.src.includes('upload_plant')){this.src='/images/upload_plant.png'}" />
           <div class="img-upload-overlay" title="Upload photo">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" 
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -254,6 +264,9 @@ function createPlantCard(plant) {
           <p class="card-date">Added ${addedDate}</p>
           <div class="card-actions">
             <a href="/details/${plant.slug || (plant.species || plant.name || "").toLowerCase().replace(/\s+/g, "_")}" class="btn-details">Details →</a>
+            <button class="btn-edit-card" data-id="${plant.id}" title="Edit plant">
+              <img src="/icons/edit-pencil.png" alt="Edit" />
+            </button>
             <button class="btn-delete-card" data-id="${plant.id}" title="Remove plant">
               <img src="/icons/bin.png" alt="Delete" />
             </button>
@@ -380,6 +393,15 @@ function createPlantCard(plant) {
           badge.textContent = "💧 Needs Water";
         }
       }
+    });
+  }
+
+  // --- Event: Edit details button ---
+  const editBtn = card.querySelector(".btn-edit-card");
+  if (editBtn) {
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditModal(plant);
     });
   }
 
@@ -747,6 +769,83 @@ async function savePlant() {
   }
 }
 
+/* -------------------------------------------------------
+   6. EDIT PLANT MODAL
+   Opens a modal pre-populated with the plant's current
+   nickname and water frequency. On save, PATCHes the
+   record and re-renders the plant list.
+------------------------------------------------------- */
+
+function openEditModal(plant) {
+  // Pre-populate fields
+  document.getElementById("editPlantId").value = plant.id;
+  document.getElementById("editPlantNickname").value = plant.nickname || "";
+
+  // Resolve current interval days
+  let currentDays = plant.intervalDays;
+  if (!currentDays) {
+    currentDays =
+      typeof plant.waterFreq === "number"
+        ? plant.waterFreq
+        : getIntervalDays(plant.waterFreq);
+  }
+  document.getElementById("editPlantWaterFreq").value = currentDays || 7;
+
+  // Open modal
+  const modalEl = document.getElementById("editPlantModal");
+  const modal =
+    bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+async function saveEditPlant() {
+  const id = document.getElementById("editPlantId").value;
+  const nickname = document.getElementById("editPlantNickname").value.trim();
+  const freqInput = document.getElementById("editPlantWaterFreq").value;
+  const intervalDays = parseInt(freqInput, 10);
+
+  if (!id) return;
+
+  if (isNaN(intervalDays) || intervalDays < 1) {
+    document.getElementById("editPlantWaterFreq").focus();
+    return;
+  }
+
+  const btnEditSave = document.getElementById("btnEditSave");
+  const originalText = btnEditSave.innerHTML;
+  btnEditSave.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving...';
+  btnEditSave.disabled = true;
+
+  try {
+    const response = await fetch(`/api/user/plants/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nickname,
+        intervalDays,
+        waterFreq: intervalDays,
+      }),
+    });
+
+    if (!response.ok) throw new Error("Failed to update plant");
+
+    // Close modal
+    const modalEl = document.getElementById("editPlantModal");
+    const modal =
+      bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.hide();
+
+    await renderPlants();
+  } catch (err) {
+    console.error("Error updating plant:", err);
+    alert("An error occurred while saving changes.");
+  } finally {
+    btnEditSave.innerHTML = originalText;
+    btnEditSave.disabled = false;
+  }
+}
+
 // User Guide Walkthrough Logic
 
 const guideData = [
@@ -760,15 +859,31 @@ const guideData = [
   },
   {
     img: "/images/guide_step3.png",
-    text: "Identify your species and drop a nickname to begin your tracking journey! Pick the correct match to keep your plant healthy and your data accurate!",
+    text: "Identify your species and drop a nickname to begin your tracking journey! Do not forget to upload your plant photo! Make sure to select the correct species for accurate care instructions and reminders. You can always edit these details later if needed.",
   },
   {
     img: "/images/guide_step4.png",
-    text: "Tap on your plant card to see your daily checklist and click the details button for more information.",
+    text: "Your plant's need will be displayed top of the card. Tap the card to expand a checklist of care tasks like watering, misting, rotating, and harvesting. Check off tasks as you complete them to keep your plant happy and healthy! If you need more information about a care task, tap the 'Details' button.",
   },
   {
     img: "/images/guide_step5.png",
     text: "Details page includes care instructions, watering schedule, and fun facts about your plant. Check back often for updates and tips!",
+  },
+  {
+    img: "/images/guide_step6.png",
+    text: "Now we have our Community Page! By clicking the 'Community' tab, you can access it.",
+  },
+  {
+    img: "/images/guide_step7.png",
+    text: "Ones you access the community page, you can display the posts of other users, you can like on them. You can also share your plant's progress and photos with our community by creating your own post!",
+  },
+  {
+    img: "/images/guide_step8.png",
+    text: "For sharing your post, simply click the 'Share a Post' button. You can write about your plant's progress, share care tips with the community. Don't forget to add a photo of your plant to inspire others!",
+  },
+  {
+    img: "/images/guide_step9.png",
+    text: "Refresh the community page to see your post live and engage with other plant lovers by liking on their posts. Happy planting and sharing!",
   },
 ];
 
@@ -808,6 +923,12 @@ function initModal() {
 
   // Save button persists the plant
   document.getElementById("btnSave").addEventListener("click", savePlant);
+
+  // Edit modal save button
+  const btnEditSave = document.getElementById("btnEditSave");
+  if (btnEditSave) {
+    btnEditSave.addEventListener("click", saveEditPlant);
+  }
 }
 
 /* -------------------------------------------------------
