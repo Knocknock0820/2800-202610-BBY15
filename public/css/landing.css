@@ -19,6 +19,8 @@ body {
   min-height: calc(100svh - 56px);
   background: linear-gradient(135deg, rgb(32, 68, 15) 0%, #687d31 100%);
   padding: 40px 16px;
+  position: relative;
+  overflow: hidden;
 }
 
 .hero-section p.lead {
@@ -50,6 +52,70 @@ body {
   color: #406768;
 }
 
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.plant-frame {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+}
+
+.plant-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.88;
+  transition: opacity 0.4s ease;
+}
+
+.plant-frame--tl {
+  transform: rotate(-6deg);
+  width: clamp(160px, 18vw, 280px);
+  height: clamp(120px, 14vw, 210px);
+  top: 6%;
+  left: 2%;
+}
+
+.plant-frame--tr {
+  transform: rotate(5deg);
+  width: clamp(170px, 19vw, 290px);
+  height: clamp(110px, 13vw, 200px);
+  top: 4%;
+  right: 2%;
+}
+
+.plant-frame--bl {
+  transform: rotate(4deg);
+  width: clamp(180px, 20vw, 300px);
+  height: clamp(120px, 14vw, 210px);
+  bottom: 6%;
+  left: 1.5%;
+}
+
+.plant-frame--br {
+  transform: rotate(-4deg);
+  width: clamp(160px, 17vw, 260px);
+  height: clamp(120px, 14vw, 200px);
+  bottom: 7%;
+  right: 2%;
+}
+
+@media (max-width: 575px) {
+  .plant-frame {
+    display: none;
+  }
+}
+
 @media (min-width: 576px) {
   .hero-section .d-flex.gap-3 {
     flex-direction: row;
@@ -63,5 +129,22 @@ body {
 
   .hero-section p.lead {
     font-size: 1.25rem;
+  }
+}
+
+/* ── Slightly reduce image size on mid-size screens so text always has room ── */
+@media (min-width: 576px) and (max-width: 991px) {
+  .plant-frame--tl,
+  .plant-frame--tr {
+    top: 2%;
+    width: clamp(130px, 16vw, 200px);
+    height: clamp(95px, 12vw, 150px);
+  }
+
+  .plant-frame--bl,
+  .plant-frame--br {
+    bottom: 3%;
+    width: clamp(140px, 17vw, 210px);
+    height: clamp(100px, 13vw, 155px);
   }
 }
