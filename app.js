@@ -412,16 +412,38 @@ app.post("/change-password", requiredLogin, async (req, res) => {
   res.redirect("/profile");
 });
 
-//   Render the community page — fetch 5 random posts from MongoDB
+//   Render the community page — fetch latest 5 posts from MongoDB chronologically
 app.get("/community", requiredLogin, async (req, res) => {
   try {
     const posts = await postCollection
-      .aggregate([{ $sample: { size: 5 } }])
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
       .toArray();
     res.render("community.ejs", { name: req.session.username, posts: posts });
   } catch (err) {
     console.error("Error fetching community posts:", err);
     res.render("community.ejs", { name: req.session.username, posts: [] });
+  }
+});
+
+// API endpoint to fetch paginated community posts
+app.get("/api/community/posts", requiredLogin, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = parseInt(req.query.skip) || 0;
+
+    const posts = await postCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    res.json({ success: true, posts });
+  } catch (err) {
+    console.error("Error fetching paginated community posts:", err);
+    res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
 
