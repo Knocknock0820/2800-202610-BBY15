@@ -3,7 +3,6 @@
 body {
   font-family: "DM Sans", sans-serif;
 }
-
 .custom-navbar {
   background-color: #19350c;
 }
@@ -111,7 +110,6 @@ body {
 }
 
 @media (max-width: 575px) {
-
   .plant-frame--tl,
   .plant-frame--bl {
     display: none;
@@ -132,7 +130,7 @@ body {
     transform: none;
     width: 100%;
     max-width: 340px;
-    height: 200px;
+    height: 120px;
     border-radius: 14px;
     margin: 0 auto;
   }
