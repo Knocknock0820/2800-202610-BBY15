@@ -915,6 +915,15 @@ function navigateGuide(direction) {
   // Update both the photo and the text
   guideImg.src = guideData[currentGuideStep].img;
   guideText.innerText = guideData[currentGuideStep].text;
+  updateGuidePageIndicator();
+}
+
+function updateGuidePageIndicator() {
+  const indicator = document.getElementById("guidePageNumber");
+  if (!indicator) return;
+  const total = Array.isArray(guideData) ? guideData.length : 0;
+  // Display as "current / total", 1-based index
+  indicator.textContent = `${Math.min(Math.max(currentGuideStep + 1, 1), total)} / ${total}`;
 }
 
 function initModal() {
@@ -926,6 +935,28 @@ function initModal() {
       document.getElementById("plantSpecies").value = "";
       // Reset image preview
       removeImagePreview();
+    });
+  }
+
+  // Initialize User Guide modal page indicator when it's shown
+  const userGuideEl = document.getElementById("userGuideModal");
+  if (userGuideEl) {
+    userGuideEl.addEventListener("show.bs.modal", () => {
+      // Ensure step is within bounds and update content + indicator
+      if (typeof currentGuideStep !== "number" || currentGuideStep < 0)
+        currentGuideStep = 0;
+      const guideImg = document.getElementById("guidePhotoDisplay");
+      const guideText = document.getElementById("guideDescription");
+      if (
+        guideImg &&
+        guideText &&
+        Array.isArray(guideData) &&
+        guideData.length > 0
+      ) {
+        guideImg.src = guideData[currentGuideStep].img;
+        guideText.innerText = guideData[currentGuideStep].text;
+      }
+      updateGuidePageIndicator();
     });
   }
 
