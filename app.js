@@ -7,6 +7,7 @@ require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
+const { execFile } = require("child_process");
 const bcrypt = require("bcrypt");
 const Joi = require("joi");
 const cloudinary = require("cloudinary").v2;
@@ -37,6 +38,7 @@ const node_session_secret = process.env.NODE_SESSION_SECRET;
 
 const { database } = require("./config/MongoDB");
 const e = require("express");
+const execFileAsync = require("util").promisify(execFile);
 const userCollection = database
   .db(mongodb_user_database)
   .collection("user-info");
@@ -606,6 +608,56 @@ app.get("/details-loading/:slug", requiredLogin, async (req, res) => {
   } catch (err) {
     console.error("Error rendering details loading page:", err);
     res.status(500).render("404");
+  }
+});
+
+app.post("/details-loading/:slug/generate", requiredLogin, async (req, res) => {
+  const slug = req.params.slug;
+
+  try {
+    const plant = await plantCollection.findOne({ slug });
+
+    if (!plant) {
+      return res.status(404).render("404");
+    }
+
+    const plantName = plant.name || slug;
+    const waterFreq = plant.waterFreq ?? "";
+    const difficulty = plant.difficulty || "Unknown";
+
+    await execFileAsync(
+      process.execPath,
+      [path.join(__dirname, "scripts", "testGeminiPlant.js"), plantName, slug],
+      {
+        cwd: __dirname,
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
+
+    await execFileAsync(
+      process.execPath,
+      [
+        path.join(__dirname, "scripts", "addSpecies.js"),
+        plantName,
+        slug,
+        String(waterFreq),
+        difficulty,
+      ],
+      {
+        cwd: __dirname,
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
+
+    return res.redirect(`/details/${slug}`);
+  } catch (err) {
+    console.error("Error generating plant assets:", err);
+    return res.status(500).render("details_loading.ejs", {
+      species: err?.plantName || slug,
+      slug,
+      errorMessage:
+        "Generation failed. Please check your API keys and try again.",
+    });
   }
 });
 

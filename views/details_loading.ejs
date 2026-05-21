@@ -19,10 +19,18 @@
                                 <%= species || 'This plant' %> does not have a hero image yet.
                             </p>
 
-                            <a href="/details/<%= slug %>" class="btn btn-success px-4 py-2 fw-bold"
-                                style="background-color: #19350c; border-color: #19350c;">
-                                Go to Details Page
-                            </a>
+                            <% if (typeof errorMessage !=='undefined' && errorMessage) { %>
+                                <div class="alert alert-warning text-start" role="alert">
+                                    <%= errorMessage %>
+                                </div>
+                                <% } %>
+
+                                    <form action="/details-loading/<%= slug %>/generate" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-success px-4 py-2 fw-bold"
+                                            style="background-color: #19350c; border-color: #19350c;">
+                                            Generate and Upload
+                                        </button>
+                                    </form>
                         </div>
                     </div>
                 </div>
