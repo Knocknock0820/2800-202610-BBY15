@@ -361,7 +361,9 @@ app.post("/signup", async (req, res) => {
 });
 
 // Render the profile page
-//added more to it shivika for profile page
+//shivika for profile page
+//got general help from youtube video and Ai for debugging and problem solving 
+// https://youtu.be/PAm_QcN6Ffs?si=jHFUN9147N0J3Sk4
 
 app.get("/profile", requiredLogin, async (req, res) => {
   try {
@@ -448,7 +450,8 @@ app.get("/api/community/posts", requiredLogin, async (req, res) => {
 });
 
 // Handle profile
-//if everyhting wokring well should be able to save photo to mongo
+//if everyhting wokring well should be able to save photo and everything to mongo
+//by shivika kapoor
 app.post(
   "/profile",
   requiredLogin,
