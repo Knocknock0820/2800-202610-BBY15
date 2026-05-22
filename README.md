@@ -174,7 +174,7 @@ WEATHER_API_KEY=your_openweather_api_key
 UNSPLASH_ACCESS_KEY=your_unsplash_api
 ```
 
-> ⚠️ **Never commit your `.env` file.** It is already listed in `.gitignore`. Store admin credentials in a separate `passwords.txt` file and submit it via D2L — do not push it to GitHub.
+> ⚠️ **Never commit your `.env` file.** It is already listed in `.gitignore`. Store admin credentials in a separate `passwords.txt` file and submit it via learning — do not push it to GitHub.
 
 #### 4. Initialize the Database
 
@@ -210,7 +210,16 @@ Visit: **http://localhost:3000**
 | MongoDB Atlas | https://www.mongodb.com/atlas |
 
 ---
-
+### Test Login Credentials
+ 
+Use these accounts to explore the app without registering. Full credentials are in `passwords.txt` submitted on learning hub.
+ 
+| Role | Email | Password |
+|---|---|---|
+| Regular User | `testuser@sprout.com` | *(see passwords.txt)* |
+| Admin | `admin@sprout.com` | *(see passwords.txt)* |
+ 
+---
 ## Testing Plan
 
 📋 **Link to Testing Plan:** *( https://docs.google.com/spreadsheets/d/1WNnyRI-34-B5dgb9ax4P7UX0Nw9yDpvo/edit?usp=sharing&ouid=100380268772405272718&rtpof=true&sd=true )*
