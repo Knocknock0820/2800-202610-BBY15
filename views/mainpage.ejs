@@ -40,6 +40,13 @@
   <!-- code adopted from bootstrap : https://getbootstrap.com/docs/5.3/components/modal/
     Modified by: Harun Yaprak -->
   <!-- ===== ADD PLANT MODAL (Bootstrap native) ===== -->
+  <!--
+    Add Plant Modal:
+    - Purpose: Collects a species selection, an optional nickname, and an optional photo for a new plant.
+    - Behaviour: The "Save Plant" action and image handling are implemented in /js/main.js.
+    - Implementation notes: Species list is populated asynchronously; keep the id attributes
+      (plantSpecies, plantName, plantImage, imagePreview, btnSave) for JS hooks.
+  -->
   <div class="modal fade modal-add-plant" id="addPlantModal" tabindex="-1" aria-labelledby="addPlantModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -130,6 +137,10 @@
           <div class="guide-photo-placeholder mb-3 shadow-sm">
             <img id="guidePhotoDisplay" src="/images/guide_step1.png" alt="User Guide Step"
               onerror="this.src='/images/error.png';">
+          </div>
+
+          <div class="d-flex justify-content-center mb-2">
+            <div id="guidePageIndicator" style="color: #19350c; font-weight: 600;">Page <span id="guidePageNumber">1 / 1</span></div>
           </div>
 
           <p id="guideDescription" class="mb-4" style="color: #19350c; font-weight: 500; min-height: 3em;">

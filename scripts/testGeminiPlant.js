@@ -284,8 +284,9 @@ async function main() {
     return;
   }
 
-  const plantName = process.argv.slice(2).join(" ").trim() || DEFAULT_PLANT;
-  const slug = slugify(plantName) || "plant";
+  const args = process.argv.slice(2).filter((arg) => arg.trim().length > 0);
+  const plantName = args[0] || DEFAULT_PLANT;
+  const slug = slugify(args[1] || plantName) || "plant";
 
   fs.mkdirSync(IMAGES_ROOT, { recursive: true });
   fs.mkdirSync(DESCRIPTIONS_ROOT, { recursive: true });

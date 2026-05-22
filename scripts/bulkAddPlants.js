@@ -7,16 +7,14 @@
  *
  * Example: node scripts/bulkAddPlants.js scripts/plant-list.txt
  *
- * This script reads a file with plant species names (one per line),
- * converts each name to a slug, creates a database entry with name and slug
- * (other attributes left empty), and creates the folder structure under
- * public/images/details/<slug>/.
+ * This script reads a file with pipe-delimited plant rows, creates a database
+ * entry with the basic plant information, and creates the folder structure
+ * under public/images/details/<slug>/.
  *
- * Input file format: One plant name per line
+ * Input file format:
+ * plant name | slug | waterFreq(days) | mistingFreq(days) | max temp(°C) | harvest day | difficulty
  * Example:
- *   Monstera
- *   Snake Plant
- *   Peace Lily
+ *   Chili Pepper | chili_pepper | 3 | 4 | 32 | 90 | Medium
  */
 
 require("dotenv").config();
@@ -42,15 +40,15 @@ function nameToSlug(name) {
 }
 
 /**
- * Read plant names from a file (one per line)
+ * Read plant rows from a file (one per line)
  */
-function readPlantNamesFromFile(filePath) {
+function readPlantRowsFromFile(filePath) {
   try {
     const content = fs.readFileSync(filePath, "utf8");
     return content
       .split("\n")
       .map((line) => line.trim())
-      .filter((line) => line.length > 0); // Remove empty lines
+      .filter((line) => line.length > 0 && !line.startsWith("//")); // Remove empty lines and comments
   } catch (err) {
     console.error(`❌ Error reading file ${filePath}:`, err.message);
     return null;
@@ -86,17 +84,70 @@ function createPlantImageFolder(slug) {
 }
 
 /**
- * Create a plant object with name and slug, other attributes empty
+ * Parse a plant row in the form:
+ * name | slug | waterFreq | mistingFreq | temp | harvestDays | difficulty
  */
-function createPlantObject(name, slug) {
+function parsePlantRow(row) {
+  const parts = row.split("|").map((part) => part.trim());
+
+  if (parts.length !== 7) {
+    return null;
+  }
+
+  const [
+    name,
+    slug,
+    waterFreqRaw,
+    mistingFreqRaw,
+    tempRaw,
+    harvestDaysRaw,
+    difficulty,
+  ] = parts;
+
+  const waterFreq = Number(waterFreqRaw);
+  const mistingFreq = Number(mistingFreqRaw);
+  const temp = Number(tempRaw);
+  const harvestDays = Number(harvestDaysRaw);
+
+  if (
+    [waterFreq, mistingFreq, temp, harvestDays].some((value) =>
+      Number.isNaN(value),
+    )
+  ) {
+    return null;
+  }
+
   return {
     name,
     slug,
-    waterFreq: null,
-    temp: null,
-    mistingFreq: null,
-    harvestDays: null,
-    difficulty: null,
+    waterFreq,
+    mistingFreq,
+    temp,
+    harvestDays,
+    difficulty,
+  };
+}
+
+/**
+ * Create a plant object with basic information only
+ */
+function createPlantObject({
+  name,
+  slug,
+  waterFreq,
+  mistingFreq,
+  temp,
+  harvestDays,
+  difficulty,
+}) {
+  return {
+    name,
+    slug,
+    waterFreq,
+    mistingFreq,
+    temp,
+    harvestDays,
+    difficulty,
     heroImage: null,
     images: {
       [`${slug}_seed`]: null,
@@ -147,11 +198,11 @@ async function main() {
     console.error(
       "Example: node scripts/bulkAddPlants.js scripts/plant-list.txt",
     );
-    console.error("\nInput file format: One plant name per line");
+    console.error(
+      "\nInput file format: plant name | slug | waterFreq(days) | mistingFreq(days) | max temp(°C) | harvest day",
+    );
     console.error("Example file contents:");
-    console.error("  Monstera");
-    console.error("  Snake Plant");
-    console.error("  Peace Lily");
+    console.error("  Chili Pepper | chili_pepper | 3 | 4 | 32 | 90");
     process.exitCode = 1;
     return;
   }
@@ -165,17 +216,17 @@ async function main() {
     return;
   }
 
-  console.log(`📖 Reading plant names from: ${filePath}`);
+  console.log(`📖 Reading plant rows from: ${filePath}`);
 
-  const plantNames = readPlantNamesFromFile(filePath);
+  const plantRows = readPlantRowsFromFile(filePath);
 
-  if (!plantNames || plantNames.length === 0) {
-    console.error("❌ No plant names found in file or file is empty");
+  if (!plantRows || plantRows.length === 0) {
+    console.error("❌ No plant rows found in file or file is empty");
     process.exitCode = 1;
     return;
   }
 
-  console.log(`\n📋 Found ${plantNames.length} plant(s)\n`);
+  console.log(`\n📋 Found ${plantRows.length} plant(s)\n`);
 
   try {
     await database.connect();
@@ -187,14 +238,22 @@ async function main() {
     let failedCount = 0;
 
     // Process each plant
-    for (const plantName of plantNames) {
-      const slug = nameToSlug(plantName);
+    for (const row of plantRows) {
+      const plantData = parsePlantRow(row);
+
+      if (!plantData) {
+        console.error(`❌ Skipping invalid row: ${row}`);
+        failedCount++;
+        continue;
+      }
+
+      const { name, slug } = plantData;
 
       // Create folder
       createPlantImageFolder(slug);
 
       // Create plant object
-      const plant = createPlantObject(plantName, slug);
+      const plant = createPlantObject(plantData);
 
       // Add to database
       const success = await addPlantToDatabase(plantCollection, plant);
@@ -206,7 +265,7 @@ async function main() {
     }
 
     console.log(`\n📊 Summary:`);
-    console.log(`   Total plants: ${plantNames.length}`);
+    console.log(`   Total plants: ${plantRows.length}`);
     console.log(`   Successfully added/updated: ${addedCount}`);
     if (failedCount > 0) {
       console.log(`   Failed: ${failedCount}`);
@@ -226,4 +285,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { nameToSlug, createPlantObject };
+module.exports = { nameToSlug, parsePlantRow, createPlantObject };
