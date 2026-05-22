@@ -1,3 +1,5 @@
+
+<!-- profile page-->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,9 +7,9 @@
    <%- include('partials/head', { title: 'Profile | Sprout', pageCSS: '/css/profile.css' }) %>
     </head>
   <body>
+
+    <!--nav bar-->
     <%- include('partials/navbar', { showLogout: true, activeLink: '' }) %>
-
-
 
   <main class="profile-main">
 
@@ -19,7 +21,7 @@
 
     <form action="/profile" method="POST" enctype="multipart/form-data" class="profile-form">
 
-      <!-- ── Photo + name header ── -->
+      <!-- ── Photo and name header ── -->
       <div class="profile-header">
         <div class="avatar-zone">
           <img
@@ -135,6 +137,7 @@
       </div>
 
     </form>
+    
     <!-- making a different form its easier this way-->
     <form id="changePasswordForm" action="/change-password" method="POST"></form>
   </main>
